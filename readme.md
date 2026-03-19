@@ -2,6 +2,88 @@
 
 Este proyecto es un **Analizador Léxico** para el lenguaje PHP, construido utilizando **ANTLR4** y **Python 3.13**. Es la base de lo que será el compilador/intérprete de **ChamitoCode**.
 
+---
+
+## Definición del Lenguaje
+
+**PHP (Hypertext Preprocessor)** es un lenguaje de programación de código abierto especialmente diseñado para el desarrollo web. Originalmente creado en 1995, ha evolucionado para ser uno de los lenguajes más utilizados en la creación de aplicaciones web dinámicas del lado del servidor.
+
+---
+
+## Alfabeto
+
+El alfabeto de PHP está compuesto por un conjunto extendido de caracteres que permite crear identificadores, variables y literales:
+
+* **Letras**: Caracteres ASCII de a-z y A-Z, además de caracteres extendidos (Unicode).
+* **Dígitos**: 0-9
+* **Caracteres Especiales**: `$`, `_`, `.`, `-`, `+`, `*`, `/`, `%`, `=`, `!`, `&`, `|`, `^`, `~`, `<`, `>`, `(`, `)`, `[`, `]`, `{`, `}`, `;`, `,`, `:`, `?`, `@`, `#`
+* **Operador signo de dólar**: `$` utilizado exclusivamente para variables.
+
+---
+
+## Descripción del Lenguaje
+
+PHP es un lenguaje versátil que combina características de múltiples paradigmas de programación. Ofrece:
+
+* **Programación dinámica y flexible**: Con tipado dinámico, permite escribir código sin declaraciones explícitas de tipos.
+* **Soporte para múltiples paradigmas**: Orientado a objetos, programación funcional e imperativa.
+* **Integración web nativa**: Diseñado específicamente para generar contenido HTML dinámico.
+* **Gestión de sesiones y cookies**: Características integradas para mantener estado en aplicaciones web.
+* **Acceso a bases de datos**: Soporte directo para conexiones con sistemas de bases de datos.
+* **Interoperabilidad**: Funciona en prácticamente todos los servidores web modernos.
+
+---
+
+## Tipo de Lenguaje
+
+PHP se clasifica como:
+
+* **Lenguaje interpretado**: Se ejecuta sin compilación previa, directamente por un intérprete.
+* **Tipado dinámico**: Los tipos de datos se determinan en tiempo de ejecución, no en tiempo de compilación.
+* **Lenguaje de dominio específico (DSL)**: Optimizado para la web, aunque de propósito general.
+* **Imperativo y orientado a objetos**: Soporta tanto programación procedural como OOP.
+* **Debidamente tipado en tiempo de ejecución**: Con soporte opcional para type hints desde PHP 7+.
+
+---
+
+## Estructuras Soportadas
+
+El lenguaje PHP soporta las siguientes estructuras principales:
+
+### Control de Flujo
+- **Condicionales**: `if`, `else`, `elseif`, `switch`, `case`
+- **Bucles**: `while`, `do-while`, `for`, `foreach`
+- **Control**: `break`, `continue`, `return`, `exit`, `die`
+
+### Definiciones y Declaraciones
+- **Funciones**: `function` para definir funciones reutilizables
+- **Clases**: `class` para programación orientada a objetos
+- **Interfaces**: `interface` para definir contratos
+- **Traits**: `trait` para compartir métodos entre clases
+- **Namespaces**: `namespace` para organizar código
+
+### Operaciones Básicas
+- **Asignación**: Simple (`=`) y compuesta (`+=`, `-=`, `*=`, `/=`, `.=`)
+- **Operadores aritméticos**: Suma (`+`), resta (`-`), multiplicación (`*`), división (`/`), módulo (`%`)
+- **Operadores de comparación**: Igualdad (`==`, `===`), desigualdad (`!=`, `!==`), mayor/menor que
+- **Operadores lógicos**: AND (`&&`), OR (`||`), NOT (`!`)
+- **Concatenación de strings**: Operador punto (`.`)
+
+### Variables y Literales
+- **Variables**: Identificadas con el prefijo `$`
+- **Tipos literales**: Enteros, flotantes, strings (comillas simples y dobles), booleanos
+- **Arrays**: Estructuras de datos indexadas y asociativas
+- **Objetos**: Instancias de clases
+
+### Características Avanzadas
+- **Manejo de errores**: `try`, `catch`, `finally`
+- **Inclusión de archivos**: `include`, `require`, `include_once`, `require_once`
+- **Declaración de constantes**: `const`, `define`
+- **Argumentos con valores por defecto**: En funciones
+- **Argumentos variables**: `...$args`
+
+---
+
 ## ¿Cómo funciona este Analizador?
 
 El proceso de análisis léxico (o *tokenización*) es la primera fase de un compilador. Su trabajo es leer el código fuente de PHP carácter por carácter y agruparlos en unidades con significado llamadas **Tokens**.
