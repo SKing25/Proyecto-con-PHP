@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PHP Lexical Analyzer</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-content">
+                <h1>PHP Lexical Analyzer</h1>
+                <p>Analizador Léxico para PHP usando ANTLR4</p>
+            </div>
+        </header>
+
+        <main>
+            <div class="content-grid">
+                <!-- Panel de Entrada -->
+                <section class="panel input-panel">
+                    <div class="panel-header">
+                        <h2>Código PHP</h2>
+                        <div class="button-group">
+                            <button id="clearBtn" class="btn btn-secondary" title="Limpiar código">
+                                💥 Limpiar
+                            </button>
+                            <button id="exampleBtn" class="btn btn-secondary" title="Cargar ejemplo">
+                                📋 Ejemplo
+                            </button>
+                        </div>
+                    </div>
+                    <textarea
+                        id="codeInput"
+                        class="code-editor"
+                        placeholder="<?php&#10;// Escribe tu código PHP aquí&#10;$nombre = 'Mundo';&#10;echo &quot;Hola &quot; . $nombre;&#10;?>"
+                        spellcheck="false"
+                    ></textarea>
+                    <button id="analyzeBtn" class="btn btn-primary">
+                        ▶ Analizar
+                    </button>
+                </section>
+
+                <!-- Panel de Resultados -->
+                <section class="panel output-panel">
+                    <div class="panel-header">
+                        <h2>Tokens</h2>
+                        <div class="token-info">
+                            <span id="tokenCount" class="badge">0 tokens</span>
+                        </div>
+                    </div>
+
+                    <!-- Tabla de Tokens -->
+                    <div id="resultsContainer" class="results-container">
+                        <div class="empty-state">
+                            <p>👇 Analiza código para ver los tokens</p>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Panel de Estadísticas -->
+            <section class="panel stats-panel">
+                <h2>Estadísticas</h2>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="totalTokens">0</div>
+                        <div class="stat-label">Total de Tokens</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="uniqueTokens">0</div>
+                        <div class="stat-label">Tokens Únicos</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="codeLines">0</div>
+                        <div class="stat-label">Líneas de Código</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="analysisTime">0ms</div>
+                        <div class="stat-label">Tiempo de Análisis</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Mensaje de Estado -->
+            <div id="statusMessage" class="status-message"></div>
+        </main>
+
+        <footer>
+            <p>PHP Lexical Analyzer v1.0.0 | ChamitoCode</p>
+        </footer>
+    </div>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>

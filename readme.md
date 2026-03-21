@@ -281,7 +281,30 @@ Cuando encuentra una coincidencia, crea un token con:
 
 ### 4. Distribución
 - Si la regla es normal → se envía al analizador sintáctico
-- Si la regla tiene `-> channel(HIDDEN)` → se descarta
+- Si la regla tiene `-> skip` → se descarta
+- Si la regla tiene `-> channel(HIDDEN)` → se descarta pero se mantiene accesible
+
+### 5. Orden de Evaluación de Reglas **CRÍTICO**
+
+**En ANTLR, el orden de las reglas léxicas importa significativamente.** El lexer evalúa las reglas en el orden en que aparecen en el archivo `PHPLexer.g4`:
+
+- Las reglas más específicas deben aparecer **ANTES** que las más generales
+- El patrón catch-all (ERROR_CHAR : `.` ;) **DEBE estar al final**
+- Las reglas con `-> skip` (whitespace) deben estar **ANTES** de ERROR_CHAR
+
+**Ejemplo problemático:**
+```antlr
+ERROR_CHAR : . ;           // INCORRECTO: capturaría TODO, incluso espacios
+WS : [ \t\r\n]+ -> skip ;
+```
+
+**Solución correcta:**
+```antlr
+WS : [ \t\r\n]+ -> skip ;  // CORRECTO: evalúa primero
+ERROR_CHAR : . ;           // Luego: atrapa caracteres inválidos
+```
+
+Sin este orden, el lexer generaría tokens ERROR_CHAR para espacios en blanco legítimos, contaminando la salida.
 
 ### Ejemplo Paso a Paso
 
@@ -431,17 +454,24 @@ alias grun='java org.antlr.v4.gui.TestRig'
 
 ### 2. Ejecutar el Script de Prueba
 
+#### Opción A: Analizar un archivo PHP
 ```bash
 # Activar el entorno virtual (si aún no está activado)
 source .venv/bin/activate
 
-# Ejecutar el analizador
+# Ejecutar el analizador con un archivo
+python3 prueba.py archivo.php
+```
+
+#### Opción B: Usar código por defecto
+```bash
+# Sin argumentos, usa el código de prueba incorporado
 python3 prueba.py
 ```
 
 ### 3. Ver la Salida
 
-El script mostrará los tokens generados de la entrada PHP proporcionada.
+El script mostrará los tokens generados de la entrada PHP proporcionada, organizados en una tabla clara con el tipo de token y su valor.
 
 ---
 
@@ -500,18 +530,109 @@ El analizador léxico sigue este flujo:
 5. **Movimiento**: Avanza a la siguiente posición después del token actual
 6. **Repetición**: Continúa hasta alcanzar el final del archivo (EOF)
 
-### Manejo de Errores
+---
 
-Si el lexer encuentra un carácter que no coincide con ninguna regla:
-- Genera un **error léxico**
-- Continúa intentando con el siguiente carácter
-- Registra la posición donde ocurrió el error
+## Manejo de Errores Léxicos
+
+### Detección de Caracteres Inválidos
+
+ANTLR proporciona dos enfoques para detectar caracteres que no coinciden con ninguna regla:
+
+#### Opción 1: ErrorListener (Automático)
+Sin agregar una regla específica, ANTLR genera un error automático cuando encuentra un carácter inválido.
+
+#### Opción 2: Regla ERROR_CHAR Explícita
+Agregamos una regla catch-all al final de PHPLexer.g4:
+
+```antlr
+// ERROR_CHAR debe estar DESPUÉS de todas las demás reglas
+// Especialmente después de WS (espacios en blanco)
+ERROR_CHAR : . ;
+```
+
+Esta regla atrapa cualquier carácter que no coincida con las reglas anteriores y lo marca como token de error.
+
+### Comparación: ANTLR vs Flex
+
+| Aspecto | Flex (C/C++) | ANTLR (Múltiples lenguajes) |
+| :--- | :--- | :--- |
+| **Detección de Error** | `{ return "ERROR"; }` | `ERROR_CHAR : . ;` |
+| **Orden de Reglas** | Las últimas reglas pueden sobrescribir | Orden crítico, left-to-right |
+| **Manejo de Errores** | Manual con return | Automático con ErrorListener o token |
+| **Ejemplo Equivalente** | `.*` → Lex retorna ERROR | `ERROR_CHAR : .` → ANTLR genera token ERROR |
+
+### Ejemplo con Error
+
+**Entrada inválida:**
+```php
+<?php
+x § 5
+?>
+```
+
+**Análisis:**
+```
+<?php           → PHP_OPEN (válido)
+x               → ID (válido)
+§               → ERROR_CHAR (carácter no reconocido)
+5               → INT (válido)
+?>              → PHP_CLOSE (válido)
+```
+
+**Salida del Analizador:**
+```
+Token: PHP_OPEN      | Valor: '<?php'
+Token: ID            | Valor: 'x'
+Token: ERROR_CHAR    | Valor: '§'
+Token: INT           | Valor: '5'
+Token: PHP_CLOSE     | Valor: '?>'
+```
+
+El análisis continúa después del error, permitiendo encuentros múltiples en un mismo archivo.
+
+---
+
+## Cobertura del Lexer (180+ Tokens)
+
+El analizador léxico actual soporta **más de 180 tokens** organizados en las siguientes categorías:
+
+### Resumen por Categorías
+
+| Categoría | Cantidad | Ejemplos |
+| :--- | :--- | :--- |
+| **Delimitadores** | 2 | `<?php`, `?>` |
+| **Palabras Clave** | 50+ | `if`, `else`, `while`, `for`, `function`, `class`, `return`, `echo`, etc. |
+| **Variables e Identificadores** | 2 | `VARIABLE` ($var), `ID` (nombre) |
+| **Literales** | 4+ | `INT`, `FLOAT`, `STRING`, `STRING_SQ` |
+| **Operadores Aritméticos** | 5+ | `+`, `-`, `*`, `/`, `%`, `**` |
+| **Operadores de Asignación** | 8+ | `=`, `+=`, `-=`, `*=`, `/=`, `.=`, `%=`, `**=` |
+| **Operadores de Comparación** | 7+ | `==`, `===`, `!=`, `!==`, `<`, `>`, `<=`, `>=`, `<=>` |
+| **Operadores Lógicos** | 6+ | `&&`, `\|\|`, `!`, `and`, `or`, `xor` |
+| **Operadores Especiales** | 8+ | `.` (concat), `->`, `=>`, `::`, `?`, `:`, `@`, `$` |
+| **Incremento/Decremento** | 2 | `++`, `--` |
+| **Signos de Puntuación** | 10+ | `(`, `)`, `{`, `}`, `[`, `]`, `;`, `,`, `.`, etc. |
+| **Comentarios** | 2 | Comentarios de línea (`//`, `#`), Comentarios de bloque (`/* */`) |
+| **Control de Error** | 1 | `ERROR_CHAR` (carácter no reconocido) |
+
+### Palabras Clave Soportadas
+
+**Control de Flujo:** `if`, `else`, `elseif`, `switch`, `case`, `default`, `break`, `continue`
+
+**Bucles:** `while`, `do`, `for`, `foreach`
+
+**Funciones y Clases:** `function`, `return`, `class`, `new`, `extends`, `implements`, `interface`, `trait`, `namespace`, `use`
+
+**Modificadores:** `public`, `private`, `protected`, `static`, `const`, `final`, `abstract`
+
+**Manejo de Errores:** `try`, `catch`, `finally`, `throw`
+
+**Inclusión de Archivos:** `include`, `include_once`, `require`, `require_once`
+
+**Otras:** `echo`, `print`, `var`, `array`, `list`, `global`, `isset`, `empty`, `unset`, `die`, `exit`
 
 ---
 
 ## Casos de Prueba
-
-### Caso de Prueba 1: Variable Entera
 
 **Entrada (archivo PHP):**
 ```php
@@ -577,33 +698,30 @@ OPEN_TAG IF LPAREN ID GT INT RPAREN LBRACE ID PLUSPLUS SEMICOLON RBRACE CLOSE_TA
 
 ---
 
-### Caso de Prueba 3: Carácter Inválido (@)
+### Caso de Prueba 3: Carácter Inválido (§)
 
 **Entrada:**
 ```php
 <?php
-x @ 5
+x § 5
 ?>
 ```
 
 **Análisis:**
 ```
-<?php              → OPEN_TAG (válido)
+<?php              → PHP_OPEN (válido)
 x                  → ID (válido)
-@                  → ERROR (carácter no reconocido por ninguna regla)
+§                  → ERROR_CHAR (carácter no reconocido por ninguna regla)
 5                  → INT (válido, continue después del error)
-?>                 → CLOSE_TAG (válido)
+?>                 → PHP_CLOSE (válido)
 ```
 
 **Salida Esperada:**
 ```
-OPEN_TAG ID ERROR INT CLOSE_TAG
+PHP_OPEN ID ERROR_CHAR INT PHP_CLOSE
 ```
 
-**Mensaje de Error:**
-```
-Lexer error: character '@' not recognized at line X, column Y
-```
+**Nota:** El símbolo `§` no está definido en ninguna regla léxica, por lo que es capturado por ERROR_CHAR. En contraste, `@` sí es un token válido (`AT`) en PHP.
 
 ---
 
