@@ -8,7 +8,9 @@ PHP_CLOSE : '?>' ;
 
 // ============================================================================
 // 2. PALABRAS CLAVE (Keywords) - Case Insensitive
+// IMPORTANTE: Deben ir ANTES que ID para que ANTLR les dé prioridad.
 // ============================================================================
+
 // Control de flujo
 IF        : [iI][fF] ;
 ELSE      : [eE][lL][sS][eE] ;
@@ -17,6 +19,7 @@ SWITCH    : [sS][wW][iI][tT][cC][hH] ;
 CASE      : [cC][aA][sS][eE] ;
 DEFAULT   : [dD][eE][fF][aA][uU][lL][tT] ;
 BREAK     : [bB][rR][eE][aA][kK] ;
+MATCH     : [mM][aA][tT][cC][hH] ;         // PHP 8+
 
 // Bucles
 WHILE     : [wW][hH][iI][lL][eE] ;
@@ -53,12 +56,12 @@ FINALLY   : [fF][iI][nN][aA][lL][lL][yY] ;
 THROW     : [tT][hH][rR][oO][wW] ;
 
 // Inclusión de archivos
-INCLUDE   : [iI][nN][cC][lL][uU][dD][eE] ;
-REQUIRE   : [rR][eE][qQ][uU][iI][rR][eE] ;
+INCLUDE      : [iI][nN][cC][lL][uU][dD][eE] ;
+REQUIRE      : [rR][eE][qQ][uU][iI][rR][eE] ;
 INCLUDE_ONCE : [iI][nN][cC][lL][uU][dD][eE]'_'[oO][nN][cC][eE] ;
 REQUIRE_ONCE : [rR][eE][qQ][uU][iI][rR][eE]'_'[oO][nN][cC][eE] ;
 
-// Entrada/Salida
+// Entrada / Salida
 ECHO      : [eE][cC][hH][oO] ;
 PRINT     : [pP][rR][iI][nN][tT] ;
 
@@ -67,91 +70,144 @@ TRUE      : [tT][rR][uU][eE] ;
 FALSE     : [fF][aA][lL][sS][eE] ;
 NULL      : [nN][uU][lL][lL] ;
 ARRAY     : [aA][rR][rR][aA][yY] ;
+LIST      : [lL][iI][sS][tT] ;
 GLOBAL    : [gG][lL][oO][bB][aA][lL] ;
 ISSET     : [iI][sS][sS][eE][tT] ;
 UNSET     : [uU][nN][sS][eE][tT] ;
 EMPTY     : [eE][mM][pP][tT][yY] ;
+INSTANCEOF: [iI][nN][sS][tT][aA][nN][cC][eE][oO][fF] ;
+
+// Operadores lógicos como palabras (menor precedencia que && y ||)
+AND_WORD  : [aA][nN][dD] ;
+OR_WORD   : [oO][rR] ;
+XOR_WORD  : [xX][oO][rR] ;
 
 // ============================================================================
 // 3. VARIABLES E IDENTIFICADORES
+// VARIABLE debe ir antes que ID para capturar $nombre completo.
 // ============================================================================
 VARIABLE  : '$' [a-zA-Z_\u0080-\u00ff] [a-zA-Z0-9_\u0080-\u00ff]* ;
 ID        : [a-zA-Z_\u0080-\u00ff] [a-zA-Z0-9_\u0080-\u00ff]* ;
 
 // ============================================================================
-// 4. LITERALES (Números y Strings)
+// 4. LITERALES NUMÉRICOS
+// Orden importante: más específicos primero para aprovechar longest match.
 // ============================================================================
-// Números decimales (debe estar antes de INT para longest match)
-FLOAT     : [0-9]+ '.' [0-9]+ ;
+
+// Hexadecimal: 0x1A3F
+INT_HEX   : '0' [xX] [0-9a-fA-F]+ ;
+
+// Binario: 0b1010
+INT_BIN   : '0' [bB] [01]+ ;
+
+// Octal: 0755
+INT_OCT   : '0' [0-7]+ ;
+
+// Float: 3.14 | .5 | 3. | 1e10 | 1.5e-3
+// Debe ir ANTES que INT para que 3.14 no se tokenice como INT(3) CONCAT FLOAT(.14)
+FLOAT     : [0-9]* '.' [0-9]+ ( [eE] [+-]? [0-9]+ )?
+          | [0-9]+             ( [eE] [+-]? [0-9]+ )
+          ;
+
+// Entero decimal (va al final de los numéricos)
 INT       : [0-9]+ ;
 
-// Strings
-STRING    : '"' ( '\\"' | . )*? '"' ;
-STRING_SQ : '\'' ( '\\\'' | . )*? '\'' ;
+// ============================================================================
+// 5. LITERALES DE CADENA
+// ============================================================================
+
+// String con comillas dobles — permite \" escapado dentro
+STRING    : '"' ( '\\"' | ~["\\\r\n] | '\\' . )* '"' ;
+
+// String con comillas simples — permite \' escapado dentro
+STRING_SQ : '\'' ( '\\\'' | ~['\\\r\n] | '\\' . )* '\'' ;
 
 // ============================================================================
-// 5. OPERADORES ARITMÉTICOS
+// 6. OPERADORES — orden de mayor a menor longitud para evitar conflictos
 // ============================================================================
-PLUS      : '+' ;
-MINUS     : '-' ;
-MUL       : '*' ;
-DIV       : '/' ;
-MOD       : '%' ;
-POWER     : '**' ;
+
+// --- Asignación compuesta (3 caracteres) ---
+POWER_ASSIGN       : '**=' ;
+NULL_COALESCE_ASSIGN: '??=' ;
+
+// --- Comparación (3 caracteres) ---
+IDENTICAL          : '===' ;
+NOT_IDENTICAL      : '!==' ;
+SPACESHIP          : '<=>' ;
+
+// --- Asignación compuesta (2 caracteres) ---
+ADD_ASSIGN         : '+=' ;
+SUB_ASSIGN         : '-=' ;
+MUL_ASSIGN         : '*=' ;
+DIV_ASSIGN         : '/=' ;
+MOD_ASSIGN         : '%=' ;
+CONCAT_ASSIGN      : '.=' ;
+AND_ASSIGN         : '&=' ;
+OR_ASSIGN          : '|=' ;
+XOR_ASSIGN         : '^=' ;
+LSHIFT_ASSIGN      : '<<=' ;
+RSHIFT_ASSIGN      : '>>=' ;
+
+// --- Aritméticos (2 caracteres) ---
+POWER              : '**' ;
+INCREMENT          : '++' ;
+DECREMENT          : '--' ;
+
+// --- Comparación (2 caracteres) ---
+EQUAL              : '==' ;
+NOT_EQUAL          : '!=' ;
+LTE                : '<=' ;
+GTE                : '>=' ;
+
+// --- Lógicos (2 caracteres) ---
+AND                : '&&' ;
+OR                 : '||' ;
+
+// --- Bitwise desplazamiento (2 caracteres) ---
+LSHIFT             : '<<' ;
+RSHIFT             : '>>' ;
+
+// --- Especiales (2 caracteres) ---
+ARROW              : '->' ;
+DOUBLE_ARROW       : '=>' ;
+DOUBLE_COLON       : '::' ;
+NULL_COALESCE      : '??' ;
+ELLIPSIS           : '...' ;
+
+// --- Aritméticos (1 carácter) ---
+PLUS               : '+' ;
+MINUS              : '-' ;
+MUL                : '*' ;
+DIV                : '/' ;
+MOD                : '%' ;
+
+// --- Comparación (1 carácter) ---
+LT                 : '<' ;
+GT                 : '>' ;
+
+// --- Asignación simple (1 carácter) ---
+ASSIGN             : '=' ;
+
+// --- Lógico (1 carácter) ---
+NOT                : '!' ;
+
+// --- Bitwise (1 carácter) ---
+BIT_AND            : '&' ;
+BIT_OR             : '|' ;
+BIT_XOR            : '^' ;
+BIT_NOT            : '~' ;
+
+// --- Concatenación de strings ---
+CONCAT             : '.' ;
+
+// --- Otros (1 carácter) ---
+QUESTION           : '?' ;
+COLON              : ':' ;
+AT                 : '@' ;     // Supresión de errores: @funcion()
+BACKSLASH          : '\\' ;    // Separador de namespaces
 
 // ============================================================================
-// 6. OPERADORES DE ASIGNACIÓN
-// ============================================================================
-ASSIGN    : '=' ;
-ADD_ASSIGN    : '+=' ;
-SUB_ASSIGN    : '-=' ;
-MUL_ASSIGN    : '*=' ;
-DIV_ASSIGN    : '/=' ;
-MOD_ASSIGN    : '%=' ;
-CONCAT_ASSIGN : '.=' ;
-POWER_ASSIGN  : '**=' ;
-
-// ============================================================================
-// 7. OPERADORES DE COMPARACIÓN
-// ============================================================================
-IDENTICAL     : '===' ;
-NOT_IDENTICAL : '!==' ;
-EQUAL         : '==' ;
-NOT_EQUAL     : '!=' ;
-LT            : '<' ;
-GT            : '>' ;
-LTE           : '<=' ;
-GTE           : '>=' ;
-SPACESHIP     : '<=>' ;
-
-// ============================================================================
-// 8. OPERADORES LÓGICOS
-// ============================================================================
-AND       : '&&' ;
-OR        : '||' ;
-XOR       : 'xor' ;
-NOT       : '!' ;
-AND_WORD  : [aA][nN][dD] ;
-OR_WORD   : [oO][rR] ;
-
-// ============================================================================
-// 9. OPERADORES DE INCREMENTO/DECREMENTO
-// ============================================================================
-INCREMENT : '++' ;
-DECREMENT : '--' ;
-
-// ============================================================================
-// 10. OPERADORES ESPECIALES
-// ============================================================================
-CONCAT    : '.' ;
-ARROW     : '->' ;
-DOUBLE_ARROW : '=>' ;
-DOUBLE_COLON : '::' ;
-QUESTION  : '?' ;
-COLON     : ':' ;
-
-// ============================================================================
-// 11. CARACTERES ESPECIALES / PUNTUACIÓN
+// 7. PUNTUACIÓN / DELIMITADORES
 // ============================================================================
 LPAREN    : '(' ;
 RPAREN    : ')' ;
@@ -161,22 +217,22 @@ LBRACKET  : '[' ;
 RBRACKET  : ']' ;
 SEMICOLON : ';' ;
 COMMA     : ',' ;
-AT        : '@' ;
-DOLLAR    : '$' ;
 
 // ============================================================================
-// 12. COMENTARIOS (HIDDEN - Se ignoran pero se procesan)
+// 8. COMENTARIOS — enviados al canal HIDDEN para que el parser los ignore
+//    pero queden disponibles para herramientas de análisis estático.
 // ============================================================================
-LINE_COMMENT   : '//' ~[\r\n]* ;
-HASH_COMMENT   : '#' ~[\r\n]* ;
-BLOCK_COMMENT  : '/*' .*? '*/' ;
+LINE_COMMENT  : '//' ~[\r\n]*        -> channel(HIDDEN) ;
+HASH_COMMENT  : '#'  ~[\r\n]*        -> channel(HIDDEN) ;
+BLOCK_COMMENT : '/*' .*? '*/'        -> channel(HIDDEN) ;
 
 // ============================================================================
-// 13. ESPACIOS EN BLANCO (Se ignoran)
+// 9. ESPACIOS EN BLANCO — descartados completamente
 // ============================================================================
-WS        : [ \t\r\n]+ -> skip ;
+WS : [ \t\r\n\f]+ -> skip ;
 
 // ============================================================================
-// TOKENS DE ERROR (Catch-all para caracteres inválidos)
+// 10. TOKEN DE ERROR — captura cualquier carácter no reconocido
+//     Siempre debe ser la última regla.
 // ============================================================================
 ERROR_CHAR : . ;

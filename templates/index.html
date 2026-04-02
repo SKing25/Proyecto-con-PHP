@@ -30,12 +30,34 @@
                             </button>
                         </div>
                     </div>
-                    <textarea
-                        id="codeInput"
-                        class="code-editor"
-                        placeholder="<?php&#10;// Escribe tu código PHP aquí&#10;$nombre = 'Mundo';&#10;echo &quot;Hola &quot; . $nombre;&#10;?>"
-                        spellcheck="false"
-                    ></textarea>
+
+                    <!-- Tabs: Texto / Archivo -->
+                    <div class="input-tabs">
+                        <button class="tab-btn active" id="tabText" onclick="switchTab('text')">✏️ Texto</button>
+                        <button class="tab-btn" id="tabFile" onclick="switchTab('file')">📁 Archivo</button>
+                    </div>
+
+                    <!-- Tab Texto -->
+                    <div id="panelText" class="tab-panel active">
+                        <textarea
+                            id="codeInput"
+                            class="code-editor"
+                            placeholder="<?php&#10;// Escribe tu código PHP aquí&#10;$nombre = 'Mundo';&#10;echo &quot;Hola &quot; . $nombre;&#10;?>"
+                            spellcheck="false"
+                        ></textarea>
+                    </div>
+
+                    <!-- Tab Archivo -->
+                    <div id="panelFile" class="tab-panel">
+                        <div class="file-drop-zone" id="dropZone">
+                            <div class="drop-icon">📂</div>
+                            <p class="drop-title">Arrastra tu archivo .php aquí</p>
+                            <p class="drop-subtitle">o haz clic para seleccionar</p>
+                            <input type="file" id="fileInput" accept=".php,.txt" hidden>
+                            <div id="fileInfo" class="file-info hidden"></div>
+                        </div>
+                    </div>
+
                     <button id="analyzeBtn" class="btn btn-primary">
                         ▶ Analizar
                     </button>
@@ -50,7 +72,6 @@
                         </div>
                     </div>
 
-                    <!-- Tabla de Tokens -->
                     <div id="resultsContainer" class="results-container">
                         <div class="empty-state">
                             <p>👇 Analiza código para ver los tokens</p>

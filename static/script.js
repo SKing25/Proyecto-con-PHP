@@ -10,6 +10,14 @@ const totalTokensStat = document.getElementById('totalTokens');
 const uniqueTokensStat = document.getElementById('uniqueTokens');
 const codeLinesStat = document.getElementById('codeLines');
 const analysisTimeStat = document.getElementById('analysisTime');
+const fileInput = document.getElementById('fileInput');
+const dropZone = document.getElementById('dropZone');
+const fileInfo = document.getElementById('fileInfo');
+
+// Estado actual
+let activeTab = 'text'; // 'text' | 'file'
+let isAnalyzing = false; // ← Fix bug: bandera de estado
+let abortController = null; // Controlador para cancelar solicitudes
 
 // Ejemplos de código
 const EXAMPLES = {
@@ -48,111 +56,194 @@ foreach ($persona as $key => $value) {
 ?>`
 };
 
-// Event Listeners
+// ============================================================
+// TABS
+// ============================================================
+function switchTab(tab) {
+    activeTab = tab;
+    document.getElementById('tabText').classList.toggle('active', tab === 'text');
+    document.getElementById('tabFile').classList.toggle('active', tab === 'file');
+    document.getElementById('panelText').classList.toggle('active', tab === 'text');
+    document.getElementById('panelFile').classList.toggle('active', tab === 'file');
+}
+
+// ============================================================
+// SUBIDA DE ARCHIVOS
+// ============================================================
+dropZone.addEventListener('click', () => fileInput.click());
+
+fileInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file) cargarArchivo(file);
+});
+
+dropZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropZone.classList.add('dragover');
+});
+
+dropZone.addEventListener('dragleave', () => {
+    dropZone.classList.remove('dragover');
+});
+
+dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    const file = e.dataTransfer.files[0];
+    if (file) cargarArchivo(file);
+});
+
+function cargarArchivo(file) {
+    if (!file.name.match(/\.(php|txt)$/i)) {
+        mostrarError('Solo se permiten archivos .php o .txt');
+        return;
+    }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const contenido = e.target.result;
+        fileInfo.textContent = `📄 ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+        fileInfo.classList.remove('hidden');
+        // Guardar contenido en el textarea oculto para reutilizar lógica de análisis
+        codeInput.value = contenido;
+        mostrarExito(`Archivo cargado: ${file.name}`);
+    };
+    reader.onerror = () => mostrarError('Error al leer el archivo');
+    reader.readAsText(file, 'UTF-8');
+}
+
+// ============================================================
+// EVENT LISTENERS
+// ============================================================
 analyzeBtn.addEventListener('click', analizarCodigo);
 clearBtn.addEventListener('click', limpiarCodigo);
 exampleBtn.addEventListener('click', cargarEjemplo);
+
 codeInput.addEventListener('keydown', (e) => {
-    if (e.ctrlKey && e.key === 'Enter') {
-        analizarCodigo();
-    }
+    if (e.ctrlKey && e.key === 'Enter') analizarCodigo();
 });
 
-// Función principal de análisis
+document.addEventListener('keydown', (e) => {
+    if (e.ctrlKey && e.shiftKey && e.code === 'KeyC') limpiarCodigo();
+});
+
+// ============================================================
+// ANÁLISIS — Botón siempre activo, sin desactivación
+// ============================================================
 async function analizarCodigo() {
-    const codigo = codeInput.value.trim();
-    
-    if (!codigo) {
-        mostrarError("El código no puede estar vacío");
+    // Si ya está analizando, no hacer nada (evitar clics múltiples)
+    if (isAnalyzing) {
         return;
     }
-    
-    // Mostrar estado de cargando
-    mostrarCargando();
+
+    const codigo = codeInput.value.trim();
+
+    if (!codigo) {
+        mostrarError('El código no puede estar vacío');
+        return;
+    }
+
+    isAnalyzing = true;
+    analyzeBtn.textContent = '⏳ Analizando...';
+    statusMessage.classList.remove('show');
     const startTime = performance.now();
     
+    // Cancelar solicitud anterior si existe
+    if (abortController) {
+        abortController.abort();
+    }
+    abortController = new AbortController();
+
     try {
+        const timeoutId = setTimeout(() => {
+            abortController.abort();
+        }, 10000); // Timeout de 10 segundos
+
         const response = await fetch('/api/analizar', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ codigo: codigo })
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ codigo }),
+            signal: abortController.signal
         });
-        
-        if (!response.ok) {
-            throw new Error(`Error HTTP: ${response.status}`);
-        }
-        
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
+
         const data = await response.json();
-        const endTime = performance.now();
-        const tiempoAnalisis = (endTime - startTime).toFixed(2);
-        
+        const tiempoAnalisis = (performance.now() - startTime).toFixed(2);
+
         if (data.exito) {
             mostrarResultados(data.tokens, tiempoAnalisis);
             actualizarEstadisticas(data.tokens, codigo);
             mostrarExito(`Análisis completado: ${data.total} tokens encontrados`);
         } else {
-            mostrarError(data.error || "Error desconocido");
+            mostrarError(data.error || 'Error desconocido');
         }
     } catch (error) {
-        mostrarError(`Error de conexión: ${error.message}`);
-        console.error('Error:', error);
+        if (error.name === 'AbortError') {
+            mostrarError('Análisis cancelado o timeout alcanzado');
+        } else {
+            mostrarError(`Error de conexión: ${error.message}`);
+            console.error('Error:', error);
+        }
+    } finally {
+        // Restaurar botón a estado normal
+        isAnalyzing = false;
+        analyzeBtn.textContent = '▶ Analizar';
     }
 }
 
-// Mostrar resultados en tabla
+// ============================================================
+// UI HELPERS
+// ============================================================
 function mostrarResultados(tokens, tiempoAnalisis) {
     if (tokens.length === 0) {
         resultsContainer.innerHTML = '<div class="empty-state"><p>No se encontraron tokens</p></div>';
         tokenCountBadge.textContent = '0 tokens';
         return;
     }
-    
+
     let html = `<table class="token-table">
         <thead>
             <tr>
-                <th style="width: 20%">Tipo de Token</th>
-                <th style="width: 40%">Valor</th>
-                <th style="width: 15%">Línea</th>
-                <th style="width: 15%">Columna</th>
+                <th style="width:20%">Tipo de Token</th>
+                <th style="width:40%">Valor</th>
+                <th style="width:15%">Línea</th>
+                <th style="width:15%">Columna</th>
             </tr>
         </thead>
         <tbody>`;
-    
-    tokens.forEach((token, index) => {
+
+    tokens.forEach((token) => {
+        const isError = token.tipo === 'ERROR_CHAR';
+        const rowClass = isError ? 'error-row' : '';
         const valor = escaparHTML(token.valor);
-        html += `<tr>
-            <td><span class="token-type">${token.tipo}</span></td>
+        html += `<tr class="${rowClass}">
+            <td><span class="token-type ${isError ? 'token-error' : ''}">${token.tipo}</span></td>
             <td><code class="token-value">${valor}</code></td>
             <td><span class="token-position">L${token.linea}</span></td>
             <td><span class="token-position">C${token.columna}</span></td>
         </tr>`;
     });
-    
+
     html += '</tbody></table>';
     resultsContainer.innerHTML = html;
     tokenCountBadge.textContent = `${tokens.length} tokens`;
     analysisTimeStat.textContent = tiempoAnalisis + 'ms';
 }
 
-// Actualizar estadísticas
 function actualizarEstadisticas(tokens, codigo) {
-    // Total de tokens
     totalTokensStat.textContent = tokens.length;
-    
-    // Tokens únicos
     const tiposUnicos = new Set(tokens.map(t => t.tipo));
     uniqueTokensStat.textContent = tiposUnicos.size;
-    
-    // Líneas de código
-    const lineas = codigo.split('\n').length;
-    codeLinesStat.textContent = lineas;
+    codeLinesStat.textContent = codigo.split('\n').length;
 }
 
-// Limpiar código
 function limpiarCodigo() {
     codeInput.value = '';
+    fileInput.value = '';
+    fileInfo.textContent = '';
+    fileInfo.classList.add('hidden');
     resultsContainer.innerHTML = '<div class="empty-state"><p>👇 Analiza código para ver los tokens</p></div>';
     statusMessage.classList.remove('show');
     tokenCountBadge.textContent = '0 tokens';
@@ -160,67 +251,35 @@ function limpiarCodigo() {
     uniqueTokensStat.textContent = '0';
     codeLinesStat.textContent = '0';
     analysisTimeStat.textContent = '0ms';
+    analyzeBtn.textContent = '▶ Analizar';
     codeInput.focus();
 }
 
-// Cargar ejemplo aleatorio
 function cargarEjemplo() {
     const ejemplos = Object.values(EXAMPLES);
-    const ejemploAleatorio = ejemplos[Math.floor(Math.random() * ejemplos.length)];
-    codeInput.value = ejemploAleatorio;
+    codeInput.value = ejemplos[Math.floor(Math.random() * ejemplos.length)];
+    switchTab('text');
     codeInput.focus();
-    // Auto-analizar después de cargar el ejemplo
     setTimeout(analizarCodigo, 300);
 }
 
-// Mostrar error
 function mostrarError(mensaje) {
     statusMessage.textContent = '❌ ' + mensaje;
     statusMessage.className = 'status-message error show';
-    analyzeBtn.disabled = false;
-    analyzeBtn.textContent = '▶ Analizar';
 }
 
-// Mostrar éxito
 function mostrarExito(mensaje) {
     statusMessage.textContent = '✅ ' + mensaje;
     statusMessage.className = 'status-message success show';
 }
 
-// Mostrar cargando
-function mostrarCargando() {
-    analyzeBtn.disabled = true;
-    analyzeBtn.innerHTML = '<span class="loading"></span> Analizando...';
-    statusMessage.classList.remove('show');
-}
-
-// Escapar HTML para evitar inyecciones
 function escaparHTML(texto) {
-    const map = {
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#039;'
-    };
+    const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
     return texto.replace(/[&<>"']/g, m => map[m]);
 }
 
-// Inicializar
+// Init
 document.addEventListener('DOMContentLoaded', () => {
     codeInput.focus();
-    // Cargar información del servidor
-    fetch('/api/info')
-        .then(r => r.json())
-        .then(data => {
-            console.log('API Info:', data);
-        })
-        .catch(e => console.error('Error loading info:', e));
-});
-
-// Teclado atajo: Ctrl + Shift + C para limpiar
-document.addEventListener('keydown', (e) => {
-    if (e.ctrlKey && e.shiftKey && e.code === 'KeyC') {
-        limpiarCodigo();
-    }
+    fetch('/api/info').then(r => r.json()).then(d => console.log('API:', d)).catch(() => {});
 });

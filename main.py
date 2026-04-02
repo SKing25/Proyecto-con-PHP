@@ -16,7 +16,16 @@ def analizar_codigo(codigo: str) -> dict:
         input_stream = InputStream(codigo)
         lexer = PHPLexer(input_stream)
         
-        tokens = lexer.getAllTokens()
+        try:
+            tokens = lexer.getAllTokens()
+        except Exception as lex_error:
+            # Si hay error en el lexer, retornar error específico
+            return {
+                "exito": False,
+                "error": f"Error léxico: {str(lex_error)}",
+                "tokens": [],
+                "total": 0
+            }
         
         resultado = {
             "exito": True,
@@ -25,19 +34,23 @@ def analizar_codigo(codigo: str) -> dict:
         }
         
         for token in tokens:
-            token_type = lexer.symbolicNames[token.type] if token.type < len(lexer.symbolicNames) else "UNKNOWN"
-            resultado["tokens"].append({
-                "tipo": token_type,
-                "valor": token.text,
-                "linea": token.line,
-                "columna": token.column
-            })
+            try:
+                token_type = lexer.symbolicNames[token.type] if token.type < len(lexer.symbolicNames) else "UNKNOWN"
+                resultado["tokens"].append({
+                    "tipo": token_type,
+                    "valor": token.text,
+                    "linea": token.line,
+                    "columna": token.column
+                })
+            except Exception as token_error:
+                continue
         
         return resultado
     except Exception as e:
+        import traceback
         return {
             "exito": False,
-            "error": str(e),
+            "error": f"Error: {str(e)}",
             "tokens": [],
             "total": 0
         }
