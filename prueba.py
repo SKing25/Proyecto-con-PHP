@@ -1,5 +1,5 @@
 from antlr4 import *
-from PHPLexer import PHPLexer
+from lexer import PHPLexer
 import sys
 
 def analizar_codigo(codigo):
