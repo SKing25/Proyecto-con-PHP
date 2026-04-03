@@ -1,845 +1,351 @@
-# PHP Lexical Analyzer
+# Analizador Léxico para PHP
 
-Este proyecto es un **Analizador Léxico** para el lenguaje PHP, construido utilizando **ANTLR4** y **Python 3.13**. Es la base de lo que será el compilador/intérprete de **ChamitoCode**.
-
----
-
-## Definición del Lenguaje
-
-**PHP (Hypertext Preprocessor)** es un lenguaje de programación de código abierto especialmente diseñado para el desarrollo web. Originalmente creado en 1995, ha evolucionado para ser uno de los lenguajes más utilizados en la creación de aplicaciones web dinámicas del lado del servidor.
+Analizador léxico (*lexer*) funcional para el lenguaje PHP, construido con **ANTLR4** y **Python 3.13**, expuesto como servicio web mediante **FastAPI**. Transforma código fuente PHP en una secuencia de tokens clasificados, con soporte para manejo de errores léxicos e interfaz web interactiva.
 
 ---
 
-## Alfabeto
+## 📋 Tabla de Contenidos
 
-El alfabeto de PHP está compuesto por un conjunto extendido de caracteres que permite crear identificadores, variables y literales:
-
-* **Letras**: Caracteres ASCII de a-z y A-Z, además de caracteres extendidos (Unicode).
-* **Dígitos**: 0-9
-* **Caracteres Especiales**: `$`, `_`, `.`, `-`, `+`, `*`, `/`, `%`, `=`, `!`, `&`, `|`, `^`, `~`, `<`, `>`, `(`, `)`, `[`, `]`, `{`, `}`, `;`, `,`, `:`, `?`, `@`, `#`
-* **Operador signo de dólar**: `$` utilizado exclusivamente para variables.
-
----
-
-## Descripción del Lenguaje
-
-PHP es un lenguaje versátil que combina características de múltiples paradigmas de programación. Ofrece:
-
-* **Programación dinámica y flexible**: Con tipado dinámico, permite escribir código sin declaraciones explícitas de tipos.
-* **Soporte para múltiples paradigmas**: Orientado a objetos, programación funcional e imperativa.
-* **Integración web nativa**: Diseñado específicamente para generar contenido HTML dinámico.
-* **Gestión de sesiones y cookies**: Características integradas para mantener estado en aplicaciones web.
-* **Acceso a bases de datos**: Soporte directo para conexiones con sistemas de bases de datos.
-* **Interoperabilidad**: Funciona en prácticamente todos los servidores web modernos.
+- [¿Qué es un analizador léxico?](#qué-es-un-analizador-léxico)
+- [Características](#características)
+- [Tecnologías](#tecnologías)
+- [Estructura del proyecto](#estructura-del-proyecto)
+- [Requisitos](#requisitos)
+- [Instalación y ejecución](#instalación-y-ejecución)
+- [Tokens soportados](#tokens-soportados)
+- [Ejemplos de uso](#ejemplos-de-uso)
+- [Limitaciones conocidas](#limitaciones-conocidas)
+- [Referencias](#referencias)
 
 ---
 
-## Tipo de Lenguaje
+## ¿Qué es un analizador léxico?
 
-PHP se clasifica como:
+Un **analizador léxico** (o *lexer*) es el primer componente de un compilador. Lee el código fuente carácter a carácter y agrupa las secuencias en unidades con significado llamadas **tokens**, que luego sirven de entrada al analizador sintáctico.
 
-* **Lenguaje interpretado**: Se ejecuta sin compilación previa, directamente por un intérprete.
-* **Tipado dinámico**: Los tipos de datos se determinan en tiempo de ejecución, no en tiempo de compilación.
-* **Lenguaje de dominio específico (DSL)**: Optimizado para la web, aunque de propósito general.
-* **Imperativo y orientado a objetos**: Soporta tanto programación procedural como OOP.
-* **Debidamente tipado en tiempo de ejecución**: Con soporte opcional para type hints desde PHP 7+.
+```
+Código fuente PHP  →  [Lexer]  →  Secuencia de tokens  →  Parser
+```
+
+El lexer se encarga de:
+- Reconocer palabras reservadas, variables, operadores y literales.
+- Descartar espacios en blanco y comentarios.
+- Reportar caracteres no reconocidos como errores léxicos.
 
 ---
 
-## Estructuras Soportadas
+## Características
 
-El lenguaje PHP soporta las siguientes estructuras principales:
-
-### Control de Flujo
-- **Condicionales**: `if`, `else`, `elseif`, `switch`, `case`
-- **Bucles**: `while`, `do-while`, `for`, `foreach`
-- **Control**: `break`, `continue`, `return`, `exit`, `die`
-
-### Definiciones y Declaraciones
-- **Funciones**: `function` para definir funciones reutilizables
-- **Clases**: `class` para programación orientada a objetos
-- **Interfaces**: `interface` para definir contratos
-- **Traits**: `trait` para compartir métodos entre clases
-- **Namespaces**: `namespace` para organizar código
-
-### Operaciones Básicas
-- **Asignación**: Simple (`=`) y compuesta (`+=`, `-=`, `*=`, `/=`, `.=`)
-- **Operadores aritméticos**: Suma (`+`), resta (`-`), multiplicación (`*`), división (`/`), módulo (`%`)
-- **Operadores de comparación**: Igualdad (`==`, `===`), desigualdad (`!=`, `!==`), mayor/menor que
-- **Operadores lógicos**: AND (`&&`), OR (`||`), NOT (`!`)
-- **Concatenación de strings**: Operador punto (`.`)
-
-### Variables y Literales
-- **Variables**: Identificadas con el prefijo `$`
-- **Tipos literales**: Enteros, flotantes, strings (comillas simples y dobles), booleanos
-- **Arrays**: Estructuras de datos indexadas y asociativas
-- **Objetos**: Instancias de clases
-
-### Características Avanzadas
-- **Manejo de errores**: `try`, `catch`, `finally`
-- **Inclusión de archivos**: `include`, `require`, `include_once`, `require_once`
-- **Declaración de constantes**: `const`, `define`
-- **Argumentos con valores por defecto**: En funciones
-- **Argumentos variables**: `...$args`
+- ✅ **110 tokens** definidos y clasificados para PHP
+- ✅ Palabras reservadas **case-insensitive** (`if`, `IF`, `If` son equivalentes)
+- ✅ Variables con prefijo `$` (`$nombre`, `$_contador`)
+- ✅ Literales numéricos en decimal, hexadecimal (`0x`), binario (`0b`), octal y flotantes
+- ✅ Cadenas con comillas simples y dobles, con soporte de secuencias de escape
+- ✅ Operadores de hasta 3 caracteres (`**=`, `===`, `<=>`)
+- ✅ Comentarios de línea (`//`, `#`) y de bloque (`/* */`) enviados al canal oculto
+- ✅ Manejo de errores léxicos con token `ERROR_CHAR`
+- ✅ Principio de **Longest Match** para resolución de conflictos entre reglas
+- ✅ API REST con FastAPI para probar el analizador desde el navegador
 
 ---
 
-## ¿Cómo funciona este Analizador?
+## Tecnologías
 
-El proceso de análisis léxico (o *tokenización*) es la primera fase de un compilador. Su trabajo es leer el código fuente de PHP carácter por carácter y agruparlos en unidades con significado llamadas **Tokens**.
-
-
-
-### 1. El Alfabeto de PHP
-PHP utiliza el juego de caracteres **UTF-8**. Nuestro analizador está configurado para reconocer:
-* **Letras y Números:** `a-z`, `A-Z`, `0-9`.
-* **Símbolos Especiales:** `$`, `(`, `)`, `{`, `}`, `;`, `=`, `+`.
-* **Caracteres Extendidos:** Soporte para identificadores con caracteres como la `ñ` o acentos (Unicode `\u0080-\u00ff`).
-
-
-### Anatomía Completa de Tokens (Lexer)
-
-El Lexer de **ChamitoCode** descompone el código PHP en las siguientes categorías de tokens obligatorios para el lenguaje:
-
-#### 1. Delimitadores de Bloque
-| Token | Regla ANTLR | Descripción |
-| :--- | :--- | :--- |
-| `OPEN_TAG` | `<?php` | Indica el inicio del intérprete PHP. |
-| `CLOSE_TAG` | `?>` | Indica el fin del bloque PHP y retorno a HTML. |
-
-#### 2. Palabras Reservadas (Keywords)
-*Nota: En PHP estas son case-insensitive (pueden escribirse en mayúsculas o minúsculas).*
-| Token | Regla (Regex) | Uso |
-| :--- | :--- | :--- |
-| `ECHO` | `[eE][cC][hH][oO]` | Imprimir texto en pantalla. |
-| `IF` | `[iI][fF]` | Estructura condicional. |
-| `ELSE` | `[eE][lL][sS][eE]` | Rama alternativa del condicional. |
-| `WHILE` | `[wW][hH][iI][lL][eE]` | Bucle basado en condición. |
-| `FOR` | `[fF][oO][rR]` | Bucle iterativo. |
-| `FUNCTION` | `[fF][uU][nN][cC]...` | Declaración de funciones. |
-| `RETURN` | `[rR][eE][tT][uU][rR][nN]` | Retorno de valor en funciones. |
-| `CLASS` | `[cC][lL][aA][sS][sS]` | Definición de objetos/clases. |
-
-#### 3. Identificadores y Variables
-| Token | Regla ANTLR | Definición Técnica |
-| :--- | :--- | :--- |
-| `VARIABLE` | `'$' [a-zA-Z_\u0080-\u00ff][a-zA-Z0-9_]*` | Cualquier nombre que empiece con `$`. |
-| `ID` | `[a-zA-Z_\u0080-\u00ff][a-zA-Z0-9_]*` | Nombres de funciones, clases o constantes. |
-
-#### 4. Literales (Datos)
-| Token | Regla ANTLR | Ejemplo |
-| :--- | :--- | :--- |
-| `INT` | `[0-9]+` | `42`, `1000` |
-| `FLOAT` | `[0-9]+ '.' [0-9]+` | `3.1416`, `0.5` |
-| `STRING` | `'"' ( '\\"' \| . )*? '"'` | `"Texto con doble comilla"` |
-| `STRING_SQ` | `'\'' ( '\\\'' \| . )*? '\''` | `'Texto con comilla simple'` |
-| `BOOLEAN` | `true \| false` | Valores lógicos. |
-
-#### 5. Operadores
-| Categoría | Tokens | Símbolos |
-| :--- | :--- | :--- |
-| **Aritméticos** | `PLUS`, `MINUS`, `MUL`, `DIV` | `+`, `-`, `*`, `/` |
-| **Asignación** | `ASSIGN`, `ADD_ASSIGN` | `=`, `+=`, `-=` |
-| **Comparación** | `EQUAL`, `IDENTICAL`, `GT`, `LT` | `==`, `===`, `>`, `<` |
-| **Lógicos** | `AND`, `OR`, `NOT` | `&&`, `||`, `!` |
-| **Otros** | `CONCAT` | `.` (Punto de concatenación) |
-
-#### 6. Signos de Puntuación
-| Token | Símbolo | Función |
-| :--- | :--- | :--- |
-| `LPAREN` / `RPAREN` | `(` `)` | Agrupación de expresiones y parámetros. |
-| `LBRACE` / `RBRACE` | `{` `}` | Delimitación de bloques de código. |
-| `SEMICOLON` | `;` | Fin de instrucción (Obligatorio en PHP). |
-| `COMMA` | `,` | Separador de argumentos. |
-
-#### 7. Elementos Ignorados (Hidden Channels)
-| Token | Regla | Acción |
-| :--- | :--- | :--- |
-| `WS` | `[ \t\r\n]+` | Los espacios y saltos de línea se descartan. |
-| `COMMENT` | `//` o `#` | Comentarios de una sola línea. |
-| `BLOCK_COMMENT`| `/* ... */` | Comentarios multilínea. |
+| Herramienta | Versión | Rol |
+|---|---|---|
+| [ANTLR4](https://www.antlr.org/) | 4.x | Generador del analizador léxico a partir de la gramática `.g4` |
+| [Python](https://www.python.org/) | 3.13+ | Lenguaje de implementación y runtime |
+| [antlr4-python3-runtime](https://pypi.org/project/antlr4-python3-runtime/) | 4.x | Runtime ANTLR4 para Python |
+| [FastAPI](https://fastapi.tiangolo.com/) | latest | Servidor web REST |
+| [Uvicorn](https://www.uvicorn.org/) | latest | Servidor ASGI para FastAPI |
+| Java JRE/JDK | 11+ | Necesario para ejecutar la herramienta ANTLR4 |
 
 ---
 
-## Reglas Léxicas
-
-Las reglas léxicas definen patrones que el analizador utiliza para reconocer y clasificar tokens. En formato ANTLR4, una regla léxica comienza con mayúscula y describe cómo identificar un tipo específico de token.
-
-### Estructura de una Regla Léxica
-
-Una regla léxica en ANTLR4 tiene la siguiente estructura:
-
-```antlr
-// Nombre de Token (siempre en MAYÚSCULAS)
-NOMBRE_TOKEN : patrón_regex [ -> mode | channel ] ;
-```
-
-**Componentes:**
-- **NOMBRE_TOKEN**: Identificador único del token (usado en mayúsculas)
-- **patrón_regex**: Expresión regular que describe qué caracteres forman este token
-- **-> mode**: (Opcional) Cambia a otro modo léxico
-- **-> channel(HIDDEN)**: (Opcional) Marca el token como ignorado
-
-### Ejemplos de Reglas Léxicas en PHP
-
-A continuación se muestran algunas reglas léxicas comunes extraídas del analizador:
-
-#### 1. Palabras Reservadas
-```antlr
-// Una palabra reservada específica
-IF : [iI][fF] ;
-ELSE : [eE][lL][sS][eE] ;
-WHILE : [wW][hH][iI][lL][eE] ;
-RETURN : [rR][eE][tT][uU][rR][nN] ;
-```
-
-#### 2. Identificadores y Variables
-```antlr
-// Variables (siempre comienzan con $)
-VARIABLE : '$' [a-zA-Z_] [a-zA-Z0-9_]* ;
-
-// Identificadores (nombres de funciones, clases, constantes)
-ID : [a-zA-Z_] [a-zA-Z0-9_]* ;
-```
-
-#### 3. Números
-```antlr
-// Números enteros
-INT : [0-9]+ ;
-
-// Números decimales (floats)
-FLOAT : [0-9]+ '.' [0-9]+ ;
-```
-
-#### 4. Cadenas de Texto
-```antlr
-// Strings con comillas dobles
-STRING : '"' ( '\\"' | ~'"' )*? '"' ;
-
-// Strings con comillas simples
-STRING_SQ : '\'' ( '\\\'' | ~'\'' )*? '\'' ;
-```
-
-#### 5. Operadores
-```antlr
-// Operadores aritméticos
-PLUS  : '+' ;
-MINUS : '-' ;
-MUL   : '*' ;
-DIV   : '/' ;
-
-// Operador de asignación
-ASSIGN : '=' ;
-
-// Comparación
-EQ : '==' ;
-NE : '!=' ;
-GT : '>' ;
-LT : '<' ;
-```
-
-#### 6. Caracteres Especiales
-```antlr
-// Signos de puntuación
-SEMICOLON : ';' ;
-COMMA     : ',' ;
-LPAREN    : '(' ;
-RPAREN    : ')' ;
-LBRACE    : '{' ;
-RBRACE    : '}' ;
-```
-
-#### 7. Ignorar Whitespace y Comentarios
-```antlr
-// Espacios en blanco (ignorados)
-WS : [ \t\n\r]+ -> channel(HIDDEN) ;
-
-// Comentarios de una línea
-LINE_COMMENT : '//' ~[\n\r]* -> channel(HIDDEN) ;
-
-// Comentarios de bloque
-BLOCK_COMMENT : '/*' .*? '*/' -> channel(HIDDEN) ;
-```
-
----
-
-## Cómo Funcionan las Reglas Léxicas
-
-El analizador léxico procesa el código fuente carácter por carácter, intentando hacer coincidir los caracteres con las reglas definidas. El proceso sigue estos pasos:
-
-### 1. Lectura Secuencial
-El lexer lee el código de izquierda a derecha, carácter por carácter.
-
-### 2. Coincidencia de Patrones
-Para cada posición, intenta encontrar la regla léxica más larga que coincida (principio de **longest match**).
-
-### 3. Creación del Token
-Cuando encuentra una coincidencia, crea un token con:
-- **Tipo**: Nombre de la regla (ej: `IF`, `ID`, `INT`)
-- **Texto**: Valor exacto de la entrada
-- **Línea y Columna**: Ubicación en el archivo
-
-### 4. Distribución
-- Si la regla es normal → se envía al analizador sintáctico
-- Si la regla tiene `-> skip` → se descarta
-- Si la regla tiene `-> channel(HIDDEN)` → se descarta pero se mantiene accesible
-
-### 5. Orden de Evaluación de Reglas **CRÍTICO**
-
-**En ANTLR, el orden de las reglas léxicas importa significativamente.** El lexer evalúa las reglas en el orden en que aparecen en el archivo `PHPLexer.g4`:
-
-- Las reglas más específicas deben aparecer **ANTES** que las más generales
-- El patrón catch-all (ERROR_CHAR : `.` ;) **DEBE estar al final**
-- Las reglas con `-> skip` (whitespace) deben estar **ANTES** de ERROR_CHAR
-
-**Ejemplo problemático:**
-```antlr
-ERROR_CHAR : . ;           // INCORRECTO: capturaría TODO, incluso espacios
-WS : [ \t\r\n]+ -> skip ;
-```
-
-**Solución correcta:**
-```antlr
-WS : [ \t\r\n]+ -> skip ;  // CORRECTO: evalúa primero
-ERROR_CHAR : . ;           // Luego: atrapa caracteres inválidos
-```
-
-Sin este orden, el lexer generaría tokens ERROR_CHAR para espacios en blanco legítimos, contaminando la salida.
-
-### Ejemplo Paso a Paso
-
-Supongamos este código de entrada:
-```php
-if (x > 5)
-```
-
-El lexer procede así:
-
-| Carácter | Regla Coincidente | Token Generado | Descripción |
-| :--- | :--- | :--- | :--- |
-| `i`, `f` | `IF` | `IF` | Coincide con la palabra reservada "if" (case-insensitive) |
-| ` ` | `WS` | (descartado) | Espacio ignorado |
-| `(` | `LPAREN` | `LPAREN` | Paréntesis de apertura |
-| `x` | `ID` | `ID: x` | Identificador válido |
-| ` ` | `WS` | (descartado) | Espacio ignorado |
-| `>` | `GT` | `GT` | Operador "mayor que" |
-| ` ` | `WS` | (descartado) | Espacio ignorado |
-| `5` | `INT` | `INT: 5` | Número entero |
-| `)` | `RPAREN` | `RPAREN` | Paréntesis de cierre |
-
-**Salida de tokens:**
-```
-IF LPAREN ID GT INT RPAREN
-```
-
----
-
-## Implementación
-
-### Herramientas Utilizadas
-
-#### ANTLR4 (Another Tool for Language Recognition)
-**ANTLR4** es un potente generador de analizadores de código:
-
-- **Propósito**: Genera lexers (analizadores léxicos) y parsers (analizadores sintácticos) automáticamente
-- **Entrada**: Archivos de gramática (`.g4`) con reglas formales
-- **Salida**: Código fuente en el lenguaje de destino (Python, Java, C#, etc.)
-- **Ventajas**:
-  - Especificación declarativa y limpia de gramáticas
-  - Soporte para múltiples lenguajes de programación
-  - Generación automática de código robusto
-  - Manejo completo de conflictos y ambigüedades
-
-### Lenguaje de Implementación
-
-#### Python 3.13
-El analizador está implementado en **Python 3.13**:
-
-- **Runtime ANTLR para Python**: `antlr4-python3-runtime`
-- **Ventajas de Python para este proyecto**:
-  - Sintaxis clara y legible
-  - Fácil integración con sistemas educativos
-  - Excelente para prototipado rápido
-  - Librerías riches para manipulación de tokens
-  - Comunidad grande y bien documentada
-
-### Comparación con Otras Herramientas
-
-| Herramienta | Lenguaje | Ventajas | Desventajas |
-| :--- | :--- | :--- | :--- |
-| **ANTLR4** | Java / Python / C# | Muy potente, genera código automático, estándar en la industria | Curva de aprendizaje inicial, overhead de generación |
-| **JFlex** | Java | Lexer simple y directo, muy rápido | Solo para lexing, no incluye parser |
-| **Flex** | C / C++ | Rápido, tradicional, bien optimizado | Sintaxis antigua, requiere manejo manual de memoria |
-| **Ragel** | Múltiples lenguajes | Flexibilidad en máquinas de estado | Menos común, documentación limitada |
-
----
-
-## Estructura del Proyecto
+## Estructura del proyecto
 
 ```
-Analizador Lexico de PHP/
+php-lexer/
 │
-├── PHPLexer.g4              # Gramática ANTLR4 que define las reglas léxicas
-├── PHPLexer.py              # Clase generada automáticamente por ANTLR4
-├── PHPLexer.interp          # Archivo de interpretación generado por ANTLR4
-├── PHPLexer.tokens          # Tabla de tokens generada por ANTLR4
-├── prueba.py                # Script de prueba que ejecuta el analizador léxico
-├── readme.md                # Este archivo de documentación
-├── .venv/                   # Entorno virtual de Python
-│   └── bin/
-│       └── activate         # Script para activar el entorno virtual
-└── __pycache__/             # Caché de Python compilado
-
+├── .venv/                  # Entorno virtual de Python
+│
+├── lexer/
+│   ├── __pycache__/
+│   ├── __init__.py
+│   ├── PHPLexer.g4         # Gramática ANTLR4 — fuente de verdad del lexer
+│   ├── PHPLexer.interp     # Archivo de interpretación generado por ANTLR4
+│   ├── PHPLexer.py         # Clase del lexer generada automáticamente por ANTLR4
+│   └── PHPLexer.tokens     # Tabla de tokens generada por ANTLR4
+│
+├── static/
+│   ├── script.js           # Lógica del frontend
+│   └── style.css           # Estilos de la interfaz web
+│
+├── templates/
+│   └── index.html          # Interfaz web para probar el analizador
+│
+├── codigo_test.php         # Archivo PHP de prueba
+├── main.py                 # Servidor FastAPI con endpoint /api/analizar
+├── .gitignore
+└── README.md
 ```
 
-### Descripción de Archivos Clave
-
-#### `PHPLexer.g4`
-Archivo de gramática ANTLR4 que define:
-- Todas las reglas léxicas (tokens)
-- Patrones para reconocer palabras reservadas, operadores, literales, etc.
-- Configuración del lexer (opciones y modos)
-
-#### `PHPLexer.py`
-Código Python **generado automáticamente** por ANTLR4. Contiene:
-- Clase `PHPLexer`: El analizador léxico real
-- Tablas de transición de estados
-- Métodos para obtener el siguiente token
-- No debe editarse manualmente (se regenera al actualizar `PHPLexer.g4`)
-
-#### `prueba.py`
-Script Python principal que:
-- Importa el lexer generado
-- Lee código PHP de entrada
-- Ejecuta el analizador léxico
-- Procesa y muestra los tokens generados
+> **Nota:** Los archivos `PHPLexer.interp`, `PHPLexer.py` y `PHPLexer.tokens` son generados automáticamente por ANTLR4. No deben editarse manualmente.
 
 ---
 
-## Requisitos e Instalación
+## Requisitos
 
-### Requisitos Previos
-1.  **Java JRE/JDK:** Necesario para ejecutar la herramienta ANTLR4.
-2.  **Python 3.x:** Para ejecutar el runtime y tu lógica de usuario.
-3.  **ANTLR4 JAR:** El archivo `antlr-4.x-complete.jar` debe estar en tu CLASSPATH.
+- Python **3.13** o superior
+- Java **JRE/JDK 11** o superior (para ejecutar ANTLR4)
+- `pip` (gestor de paquetes de Python)
 
-### Configuración del Entorno
+### Verificar versiones
+
 ```bash
-# 1. Crear entorno virtual
-python3 -m venv .venv
+python --version    # debe ser 3.13+
+java -version       # debe ser 11+
+pip --version
+```
+
+---
+
+## Instalación y ejecución
+
+### 1. Clonar el repositorio
+
+```bash
+git clone https://github.com/<usuario>/php-lexer.git
+cd php-lexer
+```
+
+### 2. Crear y activar el entorno virtual
+
+```bash
+python -m venv .venv
+
+# Linux / macOS
 source .venv/bin/activate
 
-# 2. Instalar el runtime de ANTLR para Python
-pip install antlr4-python3-runtime
+# Windows
+.venv\Scripts\activate
 ```
 
----
-
-## Cómo Ejecutarlo
-
-### 1. Regenerar el Lexer (si hay cambios en la gramática)
-
-Si realizas cambios en `PHPLexer.g4`, regenera los archivos de Python:
+### 3. Instalar dependencias
 
 ```bash
-antlr4 -Dlanguage=Python3 PHPLexer.g4
+pip install antlr4-python3-runtime fastapi uvicorn
 ```
 
-**Configuración de alias (opcional pero recomendada):**
+### 4. Generar el lexer a partir de la gramática
+
+> Solo es necesario si se modifica `PHPLexer.g4`. Si los archivos generados ya están en el repositorio, omitir este paso.
+
 ```bash
-export CLASSPATH=".:/usr/local/lib/antlr-4.13.1-complete.jar:$CLASSPATH"
-alias antlr4='java -jar /usr/local/lib/antlr-4.13.1-complete.jar'
-alias grun='java org.antlr.v4.gui.TestRig'
+# Descargar ANTLR4 (si no está instalado)
+curl -O https://www.antlr.org/download/antlr-4.13.1-complete.jar
+
+# Generar el lexer para Python3
+java -jar antlr-4.13.1-complete.jar -Dlanguage=Python3 lexer/PHPLexer.g4 -o lexer/
 ```
 
-### 2. Ejecutar el Script de Prueba
+### 5. Ejecutar el servidor
 
-#### Opción A: Analizar un archivo PHP
 ```bash
-# Activar el entorno virtual (si aún no está activado)
-source .venv/bin/activate
-
-# Ejecutar el analizador con un archivo
-python3 prueba.py archivo.php
+python main.py
 ```
 
-#### Opción B: Usar código por defecto
+### 6. Abrir en el navegador
+
+```
+http://localhost:3000
+```
+
+Desde la interfaz web puedes pegar código PHP y obtener la lista de tokens clasificados en tiempo real.
+
+---
+
+## Uso de la API
+
+El servidor expone un endpoint REST para integración programática:
+
+**`POST /api/analizar`**
+
 ```bash
-# Sin argumentos, usa el código de prueba incorporado
-python3 prueba.py
+curl -X POST http://localhost:3000/api/analizar \
+  -H "Content-Type: application/json" \
+  -d '{"codigo": "<?php echo $saludo; ?>"}'
 ```
 
-### 3. Ver la Salida
+**Respuesta:**
 
-El script mostrará los tokens generados de la entrada PHP proporcionada, organizados en una tabla clara con el tipo de token y su valor.
-
----
-
-## Explicación del Funcionamiento
-
-### Flujo General del Analizador Léxico
-
-El analizador léxico sigue este flujo:
-
-```
-┌──────────────────────┐
-│  Código PHP Fuente   │
-│  (archivo o string)  │
-└──────────┬───────────┘
-           │
-           ▼
-┌──────────────────────────────┐
-│ Crear InputStream desde      │
-│ el código fuente             │
-└──────────┬───────────────────┘
-           │
-           ▼
-┌──────────────────────────────┐
-│ Instanciar PHPLexer con      │
-│ el InputStream               │
-└──────────┬───────────────────┘
-           │
-           ▼
-┌──────────────────────────────┐
-│ Obtener todos los tokens     │
-│ mediante getAllTokens()      │
-└──────────┬───────────────────┘
-           │
-           ▼
-┌──────────────────────────────┐
-│ Procesar cada Token:         │
-│ - Tipo (ID, INT, IF, etc)   │
-│ - Valor (text)              │
-│ - Línea y columna           │
-└──────────┬───────────────────┘
-           │
-           ▼
-┌──────────────────────────────┐
-│ Mostrar/Procesar Tokens      │
-│ o Generar Error si hay       │
-│ caracteres inválidos (EOF)   │
-└──────────────────────────────┘
-```
-
-### Proceso Interno del Lexer
-
-1. **Lectura del Flujo**: El lexer lee el código fuente de izquierda a derecha
-2. **Coincidencia de Patrones**: Intenta hacer coincidir cada posición con una regla léxica
-3. **Selección Greedy**: Toma la coincidencia más larga posible (longest match)
-4. **Generación de Token**: Crea un objeto token con sus atributos
-5. **Movimiento**: Avanza a la siguiente posición después del token actual
-6. **Repetición**: Continúa hasta alcanzar el final del archivo (EOF)
-
----
-
-## Manejo de Errores Léxicos
-
-### Detección de Caracteres Inválidos
-
-ANTLR proporciona dos enfoques para detectar caracteres que no coinciden con ninguna regla:
-
-#### Opción 1: ErrorListener (Automático)
-Sin agregar una regla específica, ANTLR genera un error automático cuando encuentra un carácter inválido.
-
-#### Opción 2: Regla ERROR_CHAR Explícita
-Agregamos una regla catch-all al final de PHPLexer.g4:
-
-```antlr
-// ERROR_CHAR debe estar DESPUÉS de todas las demás reglas
-// Especialmente después de WS (espacios en blanco)
-ERROR_CHAR : . ;
-```
-
-Esta regla atrapa cualquier carácter que no coincida con las reglas anteriores y lo marca como token de error.
-
-### Comparación: ANTLR vs Flex
-
-| Aspecto | Flex (C/C++) | ANTLR (Múltiples lenguajes) |
-| :--- | :--- | :--- |
-| **Detección de Error** | `{ return "ERROR"; }` | `ERROR_CHAR : . ;` |
-| **Orden de Reglas** | Las últimas reglas pueden sobrescribir | Orden crítico, left-to-right |
-| **Manejo de Errores** | Manual con return | Automático con ErrorListener o token |
-| **Ejemplo Equivalente** | `.*` → Lex retorna ERROR | `ERROR_CHAR : .` → ANTLR genera token ERROR |
-
-### Ejemplo con Error
-
-**Entrada inválida:**
-```php
-<?php
-x § 5
-?>
-```
-
-**Análisis:**
-```
-<?php           → PHP_OPEN (válido)
-x               → ID (válido)
-§               → ERROR_CHAR (carácter no reconocido)
-5               → INT (válido)
-?>              → PHP_CLOSE (válido)
-```
-
-**Salida del Analizador:**
-```
-Token: PHP_OPEN      | Valor: '<?php'
-Token: ID            | Valor: 'x'
-Token: ERROR_CHAR    | Valor: '§'
-Token: INT           | Valor: '5'
-Token: PHP_CLOSE     | Valor: '?>'
-```
-
-El análisis continúa después del error, permitiendo encuentros múltiples en un mismo archivo.
-
----
-
-## Cobertura del Lexer (180+ Tokens)
-
-El analizador léxico actual soporta **más de 180 tokens** organizados en las siguientes categorías:
-
-### Resumen por Categorías
-
-| Categoría | Cantidad | Ejemplos |
-| :--- | :--- | :--- |
-| **Delimitadores** | 2 | `<?php`, `?>` |
-| **Palabras Clave** | 50+ | `if`, `else`, `while`, `for`, `function`, `class`, `return`, `echo`, etc. |
-| **Variables e Identificadores** | 2 | `VARIABLE` ($var), `ID` (nombre) |
-| **Literales** | 4+ | `INT`, `FLOAT`, `STRING`, `STRING_SQ` |
-| **Operadores Aritméticos** | 5+ | `+`, `-`, `*`, `/`, `%`, `**` |
-| **Operadores de Asignación** | 8+ | `=`, `+=`, `-=`, `*=`, `/=`, `.=`, `%=`, `**=` |
-| **Operadores de Comparación** | 7+ | `==`, `===`, `!=`, `!==`, `<`, `>`, `<=`, `>=`, `<=>` |
-| **Operadores Lógicos** | 6+ | `&&`, `\|\|`, `!`, `and`, `or`, `xor` |
-| **Operadores Especiales** | 8+ | `.` (concat), `->`, `=>`, `::`, `?`, `:`, `@`, `$` |
-| **Incremento/Decremento** | 2 | `++`, `--` |
-| **Signos de Puntuación** | 10+ | `(`, `)`, `{`, `}`, `[`, `]`, `;`, `,`, `.`, etc. |
-| **Comentarios** | 2 | Comentarios de línea (`//`, `#`), Comentarios de bloque (`/* */`) |
-| **Control de Error** | 1 | `ERROR_CHAR` (carácter no reconocido) |
-
-### Palabras Clave Soportadas
-
-**Control de Flujo:** `if`, `else`, `elseif`, `switch`, `case`, `default`, `break`, `continue`
-
-**Bucles:** `while`, `do`, `for`, `foreach`
-
-**Funciones y Clases:** `function`, `return`, `class`, `new`, `extends`, `implements`, `interface`, `trait`, `namespace`, `use`
-
-**Modificadores:** `public`, `private`, `protected`, `static`, `const`, `final`, `abstract`
-
-**Manejo de Errores:** `try`, `catch`, `finally`, `throw`
-
-**Inclusión de Archivos:** `include`, `include_once`, `require`, `require_once`
-
-**Otras:** `echo`, `print`, `var`, `array`, `list`, `global`, `isset`, `empty`, `unset`, `die`, `exit`
-
----
-
-## Casos de Prueba
-
-**Entrada (archivo PHP):**
-```php
-<?php
-int x = 5;
-?>
-```
-
-**Análisis Esperado:**
-| Carácter(es) | Token Esperado | Tipo |
-| :--- | :--- | :--- |
-| `<?php` | `OPEN_TAG` | Delimitador |
-| ` ` | *(ignorado)* | Whitespace |
-| `int` | `ID` | Identificador |
-| ` ` | *(ignorado)* | Whitespace |
-| `x` | `ID` | Identificador |
-| ` ` | *(ignorado)* | Whitespace |
-| `=` | `ASSIGN` | Operador |
-| ` ` | *(ignorado)* | Whitespace |
-| `5` | `INT` | Literal |
-| `;` | `SEMICOLON` | Puntuación |
-| `?>` | `CLOSE_TAG` | Delimitador |
-
-**Salida Esperada:**
-```
-OPEN_TAG INT ID ASSIGN INT SEMICOLON CLOSE_TAG
+```json
+{
+  "tokens": [
+    { "tipo": "PHP_OPEN",   "valor": "<?php",    "linea": 1, "columna": 0 },
+    { "tipo": "ECHO",       "valor": "echo",     "linea": 1, "columna": 6 },
+    { "tipo": "VARIABLE",   "valor": "$saludo",  "linea": 1, "columna": 11 },
+    { "tipo": "SEMICOLON",  "valor": ";",        "linea": 1, "columna": 18 },
+    { "tipo": "PHP_CLOSE",  "valor": "?>",       "linea": 1, "columna": 20 }
+  ],
+  "errores": [],
+  "total_tokens": 5
+}
 ```
 
 ---
 
-### Caso de Prueba 2: Condicional Simple
+## Tokens soportados
+
+El lexer reconoce **110 tokens** organizados en las siguientes categorías:
+
+### Delimitadores de bloque (2)
+| Token | Patrón |
+|---|---|
+| `PHP_OPEN` | `<?php` |
+| `PHP_CLOSE` | `?>` |
+
+### Palabras reservadas (53)
+Case-insensitive. Ejemplos: `if/IF/If`, `while/WHILE`, `class/CLASS`.
+
+Control de flujo: `IF` `ELSE` `ELSEIF` `SWITCH` `CASE` `DEFAULT` `BREAK` `MATCH` `WHILE` `FOR` `FOREACH` `DO` `CONTINUE`
+
+Funciones y clases: `FUNCTION` `RETURN` `CLASS` `NEW` `EXTENDS` `IMPLEMENTS` `INTERFACE` `TRAIT` `NAMESPACE` `USE`
+
+Modificadores OOP: `PUBLIC` `PRIVATE` `PROTECTED` `STATIC` `CONST` `FINAL` `ABSTRACT`
+
+Excepciones: `TRY` `CATCH` `FINALLY` `THROW`
+
+Inclusión: `INCLUDE` `REQUIRE` `INCLUDE_ONCE` `REQUIRE_ONCE`
+
+I/O: `ECHO` `PRINT`
+
+Valores especiales: `TRUE` `FALSE` `NULL` `ARRAY` `LIST` `GLOBAL` `ISSET` `UNSET` `EMPTY` `INSTANCEOF`
+
+Operadores lógicos de baja precedencia: `AND_WORD` `OR_WORD` `XOR_WORD`
+
+### Identificadores y variables (2)
+| Token | Patrón | Ejemplo |
+|---|---|---|
+| `VARIABLE` | `$[a-zA-Z_\u0080-\u00ff][a-zA-Z0-9_\u0080-\u00ff]*` | `$nombre`, `$_id` |
+| `ID` | `[a-zA-Z_\u0080-\u00ff][a-zA-Z0-9_\u0080-\u00ff]*` | `miFuncion`, `Cliente` |
+
+### Literales numéricos (5)
+| Token | Patrón | Ejemplo |
+|---|---|---|
+| `INT_HEX` | `0[xX][0-9a-fA-F]+` | `0x1A3F`, `0XFF` |
+| `INT_BIN` | `0[bB][01]+` | `0b1010`, `0B1111` |
+| `INT_OCT` | `0[0-7]+` | `0755`, `0123` |
+| `FLOAT` | `[0-9]*\.[0-9]+([eE][+-]?[0-9]+)?` &#124; `[0-9]+[eE][+-]?[0-9]+` | `3.1416`, `.5`, `1e10` |
+| `INT` | `[0-9]+` | `42`, `1000` |
+
+### Operadores (33)
+Ordenados por longitud para garantizar el principio de *Longest Match*:
+
+**3 caracteres:** `**=` `??=` `===` `!==` `<=>`
+
+**2 caracteres:** `+=` `-=` `*=` `/=` `%=` `.=` `&=` `|=` `^=` `<<=` `>>=` `**` `++` `--` `==` `!=` `<=` `>=` `&&` `||` `<<` `>>` `->` `=>` `::` `??` `...`
+
+**1 carácter:** `+` `-` `*` `/` `%` `<` `>` `=` `!` `&` `|` `^` `~` `.` `?` `:` `@` `\`
+
+### Puntuación (8)
+`(` `)` `{` `}` `[` `]` `;` `,`
+
+### Elementos ignorados (4)
+| Token | Mecanismo | Descripción |
+|---|---|---|
+| `WS` | `-> skip` | Espacios, tabs, saltos de línea — descartados completamente |
+| `LINE_COMMENT` | `-> channel(HIDDEN)` | Comentarios `// ...` |
+| `HASH_COMMENT` | `-> channel(HIDDEN)` | Comentarios `# ...` |
+| `BLOCK_COMMENT` | `-> channel(HIDDEN)` | Comentarios `/* ... */` |
+
+### Token de error (1)
+| Token | Descripción |
+|---|---|
+| `ERROR_CHAR` | Captura cualquier carácter no reconocido por ninguna otra regla |
+
+---
+
+## Ejemplos de uso
+
+### Condicional simple
 
 **Entrada:**
 ```php
 <?php
-if (x > 0) {
-    x++;
+if ( x > 0) {
+    x ++;
 }
 ?>
 ```
 
-**Proceso Paso a Paso:**
+**Salida:**
 ```
-<?php              → OPEN_TAG
-if                 → IF (palabra reservada case-insensitive)
-(                  → LPAREN
-x                  → ID
->                  → GT (operador de comparación)
-0                  → INT
-)                  → RPAREN
-{                  → LBRACE
-x                  → ID
-++                 → PLUSPLUS (operador de incremento)
-;                  → SEMICOLON
-}                  → RBRACE
-?>                 → CLOSE_TAG
-```
-
-**Salida Esperada:**
-```
-OPEN_TAG IF LPAREN ID GT INT RPAREN LBRACE ID PLUSPLUS SEMICOLON RBRACE CLOSE_TAG
+Token: PHP_OPEN    | Valor: '<?php'
+Token: IF          | Valor: 'if'
+Token: LPAREN      | Valor: '('
+Token: ID          | Valor: 'x'
+Token: GT          | Valor: '>'
+Token: INT         | Valor: '0'
+Token: RPAREN      | Valor: ')'
+Token: LBRACE      | Valor: '{'
+Token: ID          | Valor: 'x'
+Token: INCREMENT   | Valor: '++'
+Token: SEMICOLON   | Valor: ';'
+Token: RBRACE      | Valor: '}'
+Token: PHP_CLOSE   | Valor: '?>'
 ```
 
----
-
-### Caso de Prueba 3: Carácter Inválido (§)
+### Números en distintas bases
 
 **Entrada:**
 ```php
 <?php
-x § 5
+$decimal = 42;
+$hex     = 0x2A;
+$bin     = 0b101010;
+$oct     = 052;
+$float   = 3.14159;
 ?>
 ```
 
-**Análisis:**
+**Salida (parcial):**
 ```
-<?php              → PHP_OPEN (válido)
-x                  → ID (válido)
-§                  → ERROR_CHAR (carácter no reconocido por ninguna regla)
-5                  → INT (válido, continue después del error)
-?>                 → PHP_CLOSE (válido)
-```
-
-**Salida Esperada:**
-```
-PHP_OPEN ID ERROR_CHAR INT PHP_CLOSE
+Token: INT      | Valor: '42'
+Token: INT_HEX  | Valor: '0x2A'
+Token: INT_BIN  | Valor: '0b101010'
+Token: INT_OCT  | Valor: '052'
+Token: FLOAT    | Valor: '3.14159'
 ```
 
-**Nota:** El símbolo `§` no está definido en ninguna regla léxica, por lo que es capturado por ERROR_CHAR. En contraste, `@` sí es un token válido (`AT`) en PHP.
-
----
-
-### Caso de Prueba 4: String y Comentario
+### Operadores compuestos
 
 **Entrada:**
 ```php
 <?php
-// Este es un comentario
-$mensaje = "Hola Mundo";
+$x = 5;
+$x += 3;
+$x **= 2;
 ?>
 ```
 
-**Proceso:**
+**Salida (parcial):**
 ```
-<?php                          → OPEN_TAG
-// Este es un comentario       → (ignorado, COMMENT)
-$mensaje                       → VARIABLE
-=                              → ASSIGN
-"Hola Mundo"                   → STRING
-;                              → SEMICOLON
-?>                             → CLOSE_TAG
-```
-
-**Salida Esperada:**
-```
-OPEN_TAG VARIABLE ASSIGN STRING SEMICOLON CLOSE_TAG
+Token: ASSIGN        | Valor: '='
+Token: ADD_ASSIGN    | Valor: '+='
+Token: POWER_ASSIGN  | Valor: '**='
 ```
 
 ---
 
-### Caso de Prueba 5: Números Decimales
+## Limitaciones conocidas
 
-**Entrada:**
-```php
-<?php
-$pi = 3.14159;
-$precio = 99.99;
-?>
-```
-
-**Proceso:**
-```
-<?php              → OPEN_TAG
-$pi                → VARIABLE
-=                  → ASSIGN
-3.14159            → FLOAT
-;                  → SEMICOLON
-$precio            → VARIABLE
-=                  → ASSIGN
-99.99              → FLOAT
-;                  → SEMICOLON
-?>                 → CLOSE_TAG
-```
-
-**Salida Esperada:**
-```
-OPEN_TAG VARIABLE ASSIGN FLOAT SEMICOLON VARIABLE ASSIGN FLOAT SEMICOLON CLOSE_TAG
-```
+- **`<?=`** (short echo tag) no está implementado.
+- **`<%` / `%>`** (ASP-style tags, obsoletos en PHP 7+) no están implementados.
+- **Heredoc** (`<<<EOT`) y **Nowdoc** (`<<<'EOT'`) no están implementados.
+- **`#[`** (atributos de PHP 8.0+) no está implementado.
+- **`<?php`** solo se reconoce en minúsculas (no es case-insensitive como las demás palabras reservadas).
+- **Identificadores que comienzan con keyword corta** (ej. `format`, `android`, `usage`) pueden tokenizarse incorrectamente debido a que los tokens de palabras reservadas tienen prioridad sobre `ID` en ANTLR4. Se recomienda que el código PHP de entrada use espacios o puntuación como delimitadores.
+- El token `ERROR_CHAR` reporta el carácter inválido pero no intenta recuperación avanzada; el análisis continúa desde el siguiente carácter.
 
 ---
-
-## Ejemplo de Salida Completo
-
-### Entrada PHP:
-```php
-<?php echo $pago; ?>
-```
-
-### Proceso de Análisis:
-
-1. **Delimitador de apertura**: `<?php` → Token `OPEN_TAG`
-2. **Keyword echo**: `echo` → Token `ECHO`
-3. **Variable pago**: `$pago` → Token `VARIABLE` (con valor `$pago`)
-4. **Terminador**: `;` → Token `SEMICOLON`
-5. **Delimitador de cierre**: `?>` → Token `CLOSE_TAG`
-
-### Salida del Analizador:
-```
-Token(OPEN_TAG, '<?php', 1, 0)
-Token(ECHO, 'echo', 1, 5)
-Token(VARIABLE, '$pago', 1, 10)
-Token(SEMICOLON, ';', 1, 15)
-Token(CLOSE_TAG, '?>', 1, 16)
-```
-
-**Secuencia simplificada:**
-```
-OPEN_TAG ECHO VARIABLE SEMICOLON CLOSE_TAG
-```
-
----
-
-## Troubleshooting
-
-### Problema: "antlr4: command not found"
-**Solución:**
-```bash
-export CLASSPATH=".:/ruta/a/antlr-4.13.1-complete.jar:$CLASSPATH"
-alias antlr4='java -jar /ruta/a/antlr-4.13.1-complete.jar'
-```
-
-### Problema: "ModuleNotFoundError: No module named 'antlr4'"
-**Solución:**
-```bash
-pip install antlr4-python3-runtime
-```
-
-### Problema: El lexer no reconoce caracteres especiales
-**Solución:**
-- Verificar que `PHPLexer.g4` contiene reglas para los caracteres
-- Regenerar el lexer: `antlr4 -Dlanguage=Python3 PHPLexer.g4`
-
----
-
-## Referencias y Recursos
-
-- **ANTLR4 Official**: https://www.antlr.org/
-- **ANTLR4 Python Runtime**: https://github.com/antlr/antlr4/tree/master/runtime/Python3
-- **Documentación de PHP**: https://www.php.net/docs.php
-- **Lenguajes Formales y Compiladores**: Libros clásicos sobre teoría de compiladores
