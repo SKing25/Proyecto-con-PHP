@@ -159,3 +159,65 @@ footer { text-align: center; padding: 20px; color: var(--text-dim); border-top: 
     .panel { padding: 15px; }
     .code-editor { min-height: 200px; }
 }
+
+/* Árbol sintáctico */
+#contenedor-arbol {
+    margin-top: 24px;
+    background: #1e1e1e;
+    border-radius: 8px;
+    padding: 20px;
+    border: 1px solid #3c3c3c;
+}
+#contenedor-arbol ul {
+    list-style: none;
+    padding-left: 20px;
+    border-left: 1px dashed #444;
+    margin: 4px 0;
+}
+#contenedor-arbol > ul { border-left: none; }
+#contenedor-arbol li { margin: 4px 0; }
+#contenedor-arbol .regla {
+    cursor: pointer;
+    background: #2d2d2d;
+    color: #569cd6;
+    padding: 3px 10px;
+    border-radius: 4px;
+    border: 1px solid #3c3c3c;
+    display: inline-block;
+    user-select: none;
+}
+#contenedor-arbol .regla:hover { background: #3c3c3c; border-color: #569cd6; }
+#contenedor-arbol .token {
+    background: #1e3a1e;
+    color: #4ec94e;
+    padding: 3px 10px;
+    border-radius: 4px;
+    border: 1px solid #2d5a2d;
+    display: inline-block;
+}
+#contenedor-arbol .collapsed > ul { display: none; }
+
+.btn-arbol {
+    background: #569cd6;
+    color: white;
+    border: none;
+    padding: 6px 14px;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-right: 8px;
+    font-size: 13px;
+}
+.btn-arbol:hover { background: #4080b0; }
+
+/* Errores del parser */
+#errores-parser {
+    margin-top: 16px;
+    background: #2d1a1a;
+    color: #ff6b6b;
+    border: 1px solid #5a2d2d;
+    border-radius: 8px;
+    padding: 16px;
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    line-height: 1.8;
+}

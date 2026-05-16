@@ -130,7 +130,6 @@ document.addEventListener('keydown', (e) => {
 // ANÁLISIS — Botón siempre activo, sin desactivación
 // ============================================================
 async function analizarCodigo() {
-    // Si ya está analizando, no hacer nada (evitar clics múltiples)
     if (isAnalyzing) {
         return;
     }
@@ -147,7 +146,6 @@ async function analizarCodigo() {
     statusMessage.classList.remove('show');
     const startTime = performance.now();
     
-    // Cancelar solicitud anterior si existe
     if (abortController) {
         abortController.abort();
     }
@@ -156,7 +154,7 @@ async function analizarCodigo() {
     try {
         const timeoutId = setTimeout(() => {
             abortController.abort();
-        }, 10000); // Timeout de 10 segundos
+        }, 10000);
 
         const response = await fetch('/api/analizar', {
             method: 'POST',
@@ -175,8 +173,23 @@ async function analizarCodigo() {
         if (data.exito) {
             mostrarResultados(data.tokens, tiempoAnalisis);
             actualizarEstadisticas(data.tokens, codigo);
-            mostrarExito(`Análisis completado: ${data.total} tokens encontrados`);
+
+            // ── Errores del parser ──────────────────────────
+            if (data.errores_parser && data.errores_parser.length > 0) {
+                mostrarErroresParser(data.errores_parser);
+                ocultarArbol();
+                mostrarError(`Se encontraron ${data.errores_parser.length} error(es) sintáctico(s)`);
+            } else {
+                ocultarErroresParser();
+                // ── Árbol sintáctico ────────────────────────
+                if (data.arbol_html) {
+                    mostrarArbol(data.arbol_html);
+                    mostrarExito(`Análisis completado: ${data.total} tokens encontrados`);
+                }
+            }
         } else {
+            ocultarArbol();
+            ocultarErroresParser();
             mostrarError(data.error || 'Error desconocido');
         }
     } catch (error) {
@@ -187,7 +200,6 @@ async function analizarCodigo() {
             console.error('Error:', error);
         }
     } finally {
-        // Restaurar botón a estado normal
         isAnalyzing = false;
         analyzeBtn.textContent = '▶ Analizar';
     }
@@ -253,6 +265,8 @@ function limpiarCodigo() {
     analysisTimeStat.textContent = '0ms';
     analyzeBtn.textContent = '▶ Analizar';
     codeInput.focus();
+    ocultarArbol();
+    ocultarErroresParser();
 }
 
 function cargarEjemplo() {
@@ -283,3 +297,48 @@ document.addEventListener('DOMContentLoaded', () => {
     codeInput.focus();
     fetch('/api/info').then(r => r.json()).then(d => console.log('API:', d)).catch(() => {});
 });
+
+
+
+// Funcionnes para el arbol sintactico
+
+function mostrarArbol(htmlArbol) {
+    document.getElementById('arbol-root').innerHTML = htmlArbol;
+    document.getElementById('contenedor-arbol').style.display = 'block';
+    document.getElementById('arbol-empty').style.display = 'none';
+}
+
+function ocultarArbol() {
+    document.getElementById('contenedor-arbol').style.display = 'none';
+    document.getElementById('arbol-empty').style.display = 'block';
+}
+
+function toggleHijos(el) {
+    el.parentElement.classList.toggle('collapsed');
+}
+
+function expandirTodo() {
+    document.querySelectorAll('#contenedor-arbol .collapsed')
+        .forEach(e => e.classList.remove('collapsed'));
+}
+
+function colapsarTodo() {
+    document.querySelectorAll('#contenedor-arbol li').forEach(e => {
+        if (e.querySelector('ul')) e.classList.add('collapsed');
+    });
+}
+
+// ============================================================
+// ERRORES DEL PARSER
+// ============================================================
+function mostrarErroresParser(errores) {
+    const div = document.getElementById('errores-parser');
+    div.innerHTML = errores.map(e => `<div> ${e}</div>`).join('');
+    div.style.display = 'block';
+}
+
+function ocultarErroresParser() {
+    const div = document.getElementById('errores-parser');
+    div.innerHTML = '';
+    div.style.display = 'none';
+}

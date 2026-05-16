@@ -7,7 +7,7 @@ options { tokenVocab=PHPLexer; }
 
 
 program
-    : statement* EOF
+    : PHP_OPEN statement* PHP_CLOSE? EOF
     ;
 
 // Sentencia que me dieron con el case sensitive
@@ -18,6 +18,8 @@ statement
     | whileStatement
     | returnStatement
     | blockStatement
+    | forStatement       
+    | echoStatement    
     ;
 //Bloques de sentencias
 
@@ -36,6 +38,20 @@ ifStatement
 
 whileStatement
     : WHILE LPAREN expr RPAREN statement
+    ;
+
+// For
+forStatement
+    : FOR LPAREN expr? SEMICOLON expr? SEMICOLON expr? RPAREN statement
+    ;
+
+// Echo
+echoStatement
+    : ECHO echoList SEMICOLON
+    ;
+
+echoList
+    : expr (CONCAT expr)*
     ;
 
 //Return
@@ -77,6 +93,10 @@ argumentList
 //Expresiones unarias
 unaryExpr
     : (PLUS | MINUS | NOT) unaryExpr
+    | INCREMENT VARIABLE    
+    | DECREMENT VARIABLE    
+    | VARIABLE INCREMENT    
+    | VARIABLE DECREMENT    
     | primary
     ;
 multiplicativeExpr
