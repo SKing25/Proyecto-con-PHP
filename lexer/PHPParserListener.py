@@ -26,6 +26,87 @@ class PHPParserListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by PHPParser#foreachStatement.
+    def enterForeachStatement(self, ctx:PHPParser.ForeachStatementContext):
+        pass
+
+    # Exit a parse tree produced by PHPParser#foreachStatement.
+    def exitForeachStatement(self, ctx:PHPParser.ForeachStatementContext):
+        pass
+
+
+    # Enter a parse tree produced by PHPParser#classDeclaration.
+    def enterClassDeclaration(self, ctx:PHPParser.ClassDeclarationContext):
+        pass
+
+    # Exit a parse tree produced by PHPParser#classDeclaration.
+    def exitClassDeclaration(self, ctx:PHPParser.ClassDeclarationContext):
+        pass
+
+
+    # Enter a parse tree produced by PHPParser#classMember.
+    def enterClassMember(self, ctx:PHPParser.ClassMemberContext):
+        pass
+
+    # Exit a parse tree produced by PHPParser#classMember.
+    def exitClassMember(self, ctx:PHPParser.ClassMemberContext):
+        pass
+
+
+    # Enter a parse tree produced by PHPParser#propertyDeclaration.
+    def enterPropertyDeclaration(self, ctx:PHPParser.PropertyDeclarationContext):
+        pass
+
+    # Exit a parse tree produced by PHPParser#propertyDeclaration.
+    def exitPropertyDeclaration(self, ctx:PHPParser.PropertyDeclarationContext):
+        pass
+
+
+    # Enter a parse tree produced by PHPParser#methodDeclaration.
+    def enterMethodDeclaration(self, ctx:PHPParser.MethodDeclarationContext):
+        pass
+
+    # Exit a parse tree produced by PHPParser#methodDeclaration.
+    def exitMethodDeclaration(self, ctx:PHPParser.MethodDeclarationContext):
+        pass
+
+
+    # Enter a parse tree produced by PHPParser#accessModifier.
+    def enterAccessModifier(self, ctx:PHPParser.AccessModifierContext):
+        pass
+
+    # Exit a parse tree produced by PHPParser#accessModifier.
+    def exitAccessModifier(self, ctx:PHPParser.AccessModifierContext):
+        pass
+
+
+    # Enter a parse tree produced by PHPParser#functionDeclaration.
+    def enterFunctionDeclaration(self, ctx:PHPParser.FunctionDeclarationContext):
+        pass
+
+    # Exit a parse tree produced by PHPParser#functionDeclaration.
+    def exitFunctionDeclaration(self, ctx:PHPParser.FunctionDeclarationContext):
+        pass
+
+
+    # Enter a parse tree produced by PHPParser#paramList.
+    def enterParamList(self, ctx:PHPParser.ParamListContext):
+        pass
+
+    # Exit a parse tree produced by PHPParser#paramList.
+    def exitParamList(self, ctx:PHPParser.ParamListContext):
+        pass
+
+
+    # Enter a parse tree produced by PHPParser#param.
+    def enterParam(self, ctx:PHPParser.ParamContext):
+        pass
+
+    # Exit a parse tree produced by PHPParser#param.
+    def exitParam(self, ctx:PHPParser.ParamContext):
+        pass
+
+
     # Enter a parse tree produced by PHPParser#blockStatement.
     def enterBlockStatement(self, ctx:PHPParser.BlockStatementContext):
         pass
@@ -104,6 +185,33 @@ class PHPParserListener(ParseTreeListener):
 
     # Exit a parse tree produced by PHPParser#primary.
     def exitPrimary(self, ctx:PHPParser.PrimaryContext):
+        pass
+
+
+    # Enter a parse tree produced by PHPParser#arrayLiteral.
+    def enterArrayLiteral(self, ctx:PHPParser.ArrayLiteralContext):
+        pass
+
+    # Exit a parse tree produced by PHPParser#arrayLiteral.
+    def exitArrayLiteral(self, ctx:PHPParser.ArrayLiteralContext):
+        pass
+
+
+    # Enter a parse tree produced by PHPParser#arrayElements.
+    def enterArrayElements(self, ctx:PHPParser.ArrayElementsContext):
+        pass
+
+    # Exit a parse tree produced by PHPParser#arrayElements.
+    def exitArrayElements(self, ctx:PHPParser.ArrayElementsContext):
+        pass
+
+
+    # Enter a parse tree produced by PHPParser#arrayElement.
+    def enterArrayElement(self, ctx:PHPParser.ArrayElementContext):
+        pass
+
+    # Exit a parse tree produced by PHPParser#arrayElement.
+    def exitArrayElement(self, ctx:PHPParser.ArrayElementContext):
         pass
 
 

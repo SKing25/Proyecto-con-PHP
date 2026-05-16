@@ -25,13 +25,15 @@ MATCH     : [mM][aA][tT][cC][hH] ;         // PHP 8+
 WHILE     : [wW][hH][iI][lL][eE] ;
 FOR       : [fF][oO][rR] ;
 FOREACH   : [fF][oO][rR][eE][aA][cC][hH] ;
+AS        : [aA][sS] ;
 DO        : [dD][oO] ;
 CONTINUE  : [cC][oO][nN][tT][iI][nN][uU][eE] ;
 
-// Funciones y Clases
+// Funciones y Clases, Solo implementar estos
 FUNCTION  : [fF][uU][nN][cC][tT][iI][oO][nN] ;
 RETURN    : [rR][eE][tT][uU][rR][nN] ;
 CLASS     : [cC][lL][aA][sS][sS] ;
+
 NEW       : [nN][eE][wW] ;
 EXTENDS   : [eE][xX][tT][eE][nN][dD][sS] ;
 IMPLEMENTS: [iI][mM][pP][lL][eE][mM][eE][nN][tT][sS] ;
@@ -44,6 +46,8 @@ USE       : [uU][sS][eE] ;
 PUBLIC    : [pP][uU][bB][lL][iI][cC] ;
 PRIVATE   : [pP][rR][iI][vV][aA][tT][eE] ;
 PROTECTED : [pP][rR][oO][tT][eE][cC][tT][eE][dD] ;
+
+
 STATIC    : [sS][tT][aA][tT][iI][cC] ;
 CONST     : [cC][oO][nN][sS][tT] ;
 FINAL     : [fF][iI][nN][aA][lL] ;

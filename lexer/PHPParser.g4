@@ -18,10 +18,54 @@ statement
     | whileStatement
     | returnStatement
     | blockStatement
-    | forStatement       
-    | echoStatement    
+    | forStatement  
+    | foreachStatement     
+    | echoStatement  
+    | functionDeclaration  
+    | classDeclaration 
     ;
 //Bloques de sentencias
+
+// Foreach
+foreachStatement
+    : FOREACH LPAREN expr AS VARIABLE (DOUBLE_ARROW VARIABLE)? RPAREN statement
+    ;
+
+classDeclaration
+    : CLASS ID LBRACE classMember* RBRACE
+    ;
+
+classMember
+    : propertyDeclaration
+    | methodDeclaration
+    ;
+
+propertyDeclaration
+    : accessModifier? VARIABLE SEMICOLON
+    ;
+
+methodDeclaration
+    : accessModifier? FUNCTION ID LPAREN paramList? RPAREN blockStatement
+    ;
+
+accessModifier
+    : PUBLIC
+    | PRIVATE
+    | PROTECTED
+    ;
+
+
+functionDeclaration
+    : FUNCTION ID LPAREN paramList? RPAREN blockStatement
+    ;
+
+paramList
+    : param (COMMA param)*
+    ;
+
+param
+    : VARIABLE
+    ;
 
 blockStatement
     : LBRACE statement* RBRACE
@@ -73,8 +117,23 @@ primary
     : VARIABLE
     | literal
     | functionCall
+    | arrayLiteral 
     | LPAREN expr RPAREN
     ;
+
+arrayLiteral
+    : LBRACKET arrayElements? RBRACKET
+    ;
+
+arrayElements
+    : arrayElement (COMMA arrayElement)*
+    ;
+
+arrayElement
+    : expr DOUBLE_ARROW expr    
+    | expr                      
+    ;
+
 literal
     : INT
     | FLOAT
