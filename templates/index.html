@@ -22,22 +22,16 @@
                     <div class="panel-header">
                         <h2>Código PHP</h2>
                         <div class="button-group">
-                            <button id="clearBtn" class="btn btn-secondary" title="Limpiar código">
-                                💥 Limpiar
-                            </button>
-                            <button id="exampleBtn" class="btn btn-secondary" title="Cargar ejemplo">
-                                📋 Ejemplo
-                            </button>
+                            <button id="clearBtn" class="btn btn-secondary">💥 Limpiar</button>
+                            <button id="exampleBtn" class="btn btn-secondary">📋 Ejemplo</button>
                         </div>
                     </div>
 
-                    <!-- Tabs: Texto / Archivo -->
                     <div class="input-tabs">
                         <button class="tab-btn active" id="tabText" onclick="switchTab('text')">✏️ Texto</button>
                         <button class="tab-btn" id="tabFile" onclick="switchTab('file')">📁 Archivo</button>
                     </div>
 
-                    <!-- Tab Texto -->
                     <div id="panelText" class="tab-panel active">
                         <textarea
                             id="codeInput"
@@ -47,7 +41,6 @@
                         ></textarea>
                     </div>
 
-                    <!-- Tab Archivo -->
                     <div id="panelFile" class="tab-panel">
                         <div class="file-drop-zone" id="dropZone">
                             <div class="drop-icon">📂</div>
@@ -58,12 +51,10 @@
                         </div>
                     </div>
 
-                    <button id="analyzeBtn" class="btn btn-primary">
-                        ▶ Analizar
-                    </button>
+                    <button id="analyzeBtn" class="btn btn-primary">▶ Analizar</button>
                 </section>
 
-                <!-- Panel de Resultados -->
+         
                 <section class="panel output-panel">
                     <div class="panel-header">
                         <h2>Tokens</h2>
@@ -71,11 +62,34 @@
                             <span id="tokenCount" class="badge">0 tokens</span>
                         </div>
                     </div>
-
                     <div id="resultsContainer" class="results-container">
                         <div class="empty-state">
                             <p>👇 Analiza código para ver los tokens</p>
                         </div>
+                    </div>
+                </section>
+
+           
+                <section class="panel output-parser">
+                    <div class="panel-header">
+                        <h2>Árbol de Sintactico (Parser)</h2>
+                    </div>
+
+                 
+                    <div id="errores-parser" style="display:none;"></div>
+
+               
+                    <div id="contenedor-arbol" style="display:none;">
+                        <div style="margin-bottom:10px;">
+                            <button onclick="expandirTodo()" class="btn-arbol">Expandir arbol</button>
+                            <button onclick="colapsarTodo()" class="btn-arbol">Colapsar arbol</button>
+                        </div>
+                        <ul id="arbol-root"></ul>
+                    </div>
+
+    
+                    <div id="arbol-empty" class="empty-state">
+    
                     </div>
                 </section>
             </div>
@@ -103,7 +117,6 @@
                 </div>
             </section>
 
-            <!-- Mensaje de Estado -->
             <div id="statusMessage" class="status-message"></div>
         </main>
 
